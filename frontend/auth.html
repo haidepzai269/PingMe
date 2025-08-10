@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Đăng nhập / Đăng ký</title>
+  <link rel="stylesheet" href="auth.css" />
+</head>
+<body>
+  <div class="auth-wrapper" id="auth-wrapper">
+    <div class="auth-image"></div>
+
+    <div class="auth-container">
+      <div class="form-box">
+        <h2 id="form-title">Đăng nhập - PingMe</h2>
+
+        <input type="text" id="username" placeholder="Tên tài khoản" />
+        <input type="password" id="password" placeholder="Mật khẩu" />
+        
+        <button id="auth-btn">Đăng nhập</button>
+        <p id="toggle-auth">Chưa có tài khoản? <a href="#" id="toggle-link">Đăng ký</a></p>
+        <p id="forgot-password"><a href="forgot.html">Bạn quên mật khẩu ✓</a></p>
+        <p id="auth-message"></p>
+      </div>
+    </div>
+  </div>
+  <div id="screen-warning" style="display: none;">
+    <div class="warning-box">
+      <p>Thiết bị của bạn không phù hợp cho ứng dụng<br>
+        Vui lòng chuyển sang thiết bị khác phù hợp ✓
+      </p>
+    </div>
+  </div>
+  
+  <script  src="auth.js"></script>
+  <script>
+    // Thêm hiệu ứng đổi bên khi toggle đăng ký/đăng nhập
+    const wrapper = document.getElementById('auth-wrapper');
+    document.getElementById('toggle-auth').addEventListener('click', () => {
+      wrapper.classList.toggle('slide-active');
+    });
+  </script>
+  <script>
+    function checkScreenSize() {
+      const warning = document.getElementById('screen-warning');
+      const wrapper = document.querySelector('.auth-wrapper');
+      if (window.innerWidth < 400) {
+        warning.style.display = 'flex';
+        wrapper.style.display = 'none';
+      } else {
+        warning.style.display = 'none';
+        wrapper.style.display = 'flex';
+      }
+    }
+  
+    window.addEventListener('resize', checkScreenSize);
+    window.addEventListener('DOMContentLoaded', checkScreenSize);
+  </script>  
+  
+</body>
+</html>

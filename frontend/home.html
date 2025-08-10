@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trang chủ</title>
+  <link rel="stylesheet" href="home.css" />
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+</head>
+<body>
+  <!-- Hiệu ứng chữ khi vừa đăng nhập -->
+  <div id="login-effect-overlay" class="login-effect hidden">
+    <svg viewBox="0 0 600 100" class="draw-text">
+      <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle">ChatWeb</text>
+    </svg>
+  </div>
+  
+
+  <div class="wrapper">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <button onclick="location.href='home.html'">Home</button>
+      <button onclick="location.href='chat.html'">Chat</button>
+    </aside>
+
+    <!-- Danh sách người dùng -->
+    <main class="main-section">
+      <input type="text" id="search" placeholder="Tìm kiếm bạn bè ..." />
+      <h3 class="friend-suggestion-title">Gợi ý bạn bè</h3>
+      <div id="user-list"></div>
+    </main>
+
+    <!-- Hồ sơ cá nhân -->
+    <aside class="profile-section">
+      <div id="profile-avatar"></div>
+      <h2 id="profile-username">...</h2>
+      <p id="profile-bio">...</p>
+      <p id="profile-friends-count" class="friends-count">Bạn bè: 0</p>
+      <button id="edit-profile">Chỉnh sửa thông tin</button>
+    </aside>
+  </div>
+<!-- Modal chỉnh sửa -->
+<div id="edit-modal" class="modal hidden">
+    <div class="modal-content">
+      <h2>Chỉnh sửa hồ sơ</h2>
+      <input type="text" id="edit-username" placeholder="Tên tài khoản mới" />
+      <textarea id="edit-bio" placeholder="Giới thiệu bản thân..."></textarea>
+      <input   type="file" id="edit-avatar" accept="image/*" />
+      <button onclick="submitEdit()">Lưu thay đổi</button>
+      <button onclick="closeModal()">Hủy</button>
+    </div>
+  </div>
+  <!-- Avatar Modal -->
+  <div id="avatar-modal" class="modal hidden">
+    <div class="avatar-modal-content">
+      <span id="close-avatar-modal" class="close">&times;</span>
+      <img id="modal-avatar-img" src="" alt="avatar full" />
+    </div>
+  </div>
+
+  <!-- Mobile Navigation -->
+  <div class="mobile-nav">
+  <button onclick="location.href='home.html'">🏠</button>
+  <button onclick="location.href='chat.html'">💬</button>
+  <button onclick="document.getElementById('edit-modal').classList.remove('hidden')">👤</button>
+  </div>
+  <div id="unsupported-message" class="hidden">
+    <h2>Xin lỗi , trang không hoạt động</h2>
+    <p>Thiết bị của bạn có màn hình quá nhỏ để sử dụng trang web này.</p>
+  </div>
+
+  <script type="module" src="authFetch.js"></script>
+  <script type="module" src="home.js"></script>
+  <script>
+    function checkScreenSize() {
+      const warning = document.getElementById("unsupported-message");
+      if (window.innerWidth < 400) {
+        warning.classList.remove("hidden");
+        document.body.style.overflow = "hidden";
+      } else {
+        warning.classList.add("hidden");
+        document.body.style.overflow = "";
+      }
+    }
+  
+    window.addEventListener("resize", checkScreenSize);
+    window.addEventListener("DOMContentLoaded", checkScreenSize);
+  </script>
+  
+</body>
+</html>

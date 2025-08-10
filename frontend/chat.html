@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trò chuyện</title>
+  <link rel="stylesheet" href="chat.css" />
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <style>
+    /* 👇 Thêm hiệu ứng rung khi gọi */
+    .calling-animation {
+      animation: shake 1s infinite;
+    }
+    @keyframes shake {
+      0% { transform: translate(1px, 1px) rotate(0deg); }
+      10% { transform: translate(-1px, -2px) rotate(-1deg); }
+      20% { transform: translate(-3px, 0px) rotate(1deg); }
+      30% { transform: translate(3px, 2px) rotate(0deg); }
+      40% { transform: translate(1px, -1px) rotate(1deg); }
+      50% { transform: translate(-1px, 2px) rotate(-1deg); }
+      60% { transform: translate(-3px, 1px) rotate(0deg); }
+      70% { transform: translate(3px, 1px) rotate(-1deg); }
+      80% { transform: translate(-1px, -1px) rotate(1deg); }
+      90% { transform: translate(1px, 2px) rotate(0deg); }
+      100% { transform: translate(1px, -2px) rotate(-1deg); }
+    }
+    /* 👇 Thêm avatar + tên người gọi */
+    .call-user-info {
+      color: white;
+      text-align: center;
+      margin-top: 10px;
+    }
+    .call-user-info img {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      border: 2px solid white;
+    }
+    .call-user-info h3 {
+      margin: 10px 0 0;
+      font-size: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="chat-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <button class="nav-btn" onclick="location.href='home.html'">Home</button>
+      <button class="nav-btn" onclick="location.href='chat.html'">Chat</button>
+    </aside>
+
+    <!-- Danh sách trò chuyện -->
+    <section class="chat-list">
+      <div id="chat-title" class="chat-title"></div>
+      <input type="text" id="search-input" placeholder="Tìm kiếm..." />
+      <h3>Gợi ý trò chuyện</h3>
+      <ul id="user-suggestions"></ul>
+    </section>
+
+    <!-- Khung chat -->
+    <main class="chat-main">
+      <div id="chat-header" class="chat-header"></div>
+      <div id="chat-messages" class="messages">
+        <div class="skeleton-message"></div>
+        <div class="skeleton-message mine"></div>
+        <div class="skeleton-message"></div>
+      </div>
+      <div id="scrollToBottomBtn" class="scroll-to-bottom">👇</div>
+      <div id="typing-indicator" class="typing-indicator"></div>
+      <div class="chat-input">
+        <!-- Nút upload và input file ẩn -->
+        <button id="uploadBtn">📎</button>
+        <input type="file" id="fileInput" accept="image/*,video/*" style="display: none" />
+      
+        <!-- Ô nhập tin nhắn và nút gửi -->
+        <input type="text" id="message-input" placeholder="Nhập tin nhắn..." />
+        <button id="send-btn">Gửi</button>
+      </div>      
+    </main>
+  </div>
+
+  <!-- Modal xem ảnh toàn màn hình -->
+  <div id="imageModal" class="image-modal">
+    <span id="closeModal">&times;</span>
+    <img id="modalImage" src="" alt="Xem ảnh">
+  </div>
+
+  <div id="chat-notification-container"></div>
+
+  <!-- VIDEO CALL UI -->
+  <div id="call-container" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#000c; justify-content:center; align-items:center; z-index:9999; flex-direction:column;">
+    
+    <!-- VIDEO lớn -->
+    <video id="remoteVideo" autoplay playsinline style="width:80%; max-height:60%; border:2px solid white; border-radius:10px;"></video>
+    
+    <!-- VIDEO nhỏ -->
+    <video id="localVideo" autoplay muted playsinline style="width:20%; position:absolute; bottom:10px; right:10px; border:2px solid white; border-radius:10px;"></video>
+
+    <!-- Avatar + tên khi đang đợi -->
+    <div class="call-user-info" id="callUserInfo" style="display:none;">
+      <img id="callAvatar" src="" alt="Avatar">
+      <h3 id="callUsername">Đang gọi...</h3>
+    </div>
+
+    <!-- Nút gọi -->
+    <div style="margin-top:20px;">
+      <button id="startCallBtn">📞 Gọi</button>
+      <button id="acceptCallBtn" style="display:none;">✅ Chấp nhận</button>
+      <button id="rejectCallBtn" style="display:none;">❌ Từ chối</button>
+      <button id="endCallBtn" style="display:none;">🛑 Kết thúc</button>
+      <button id="toggleMicBtn" style="display:none;">🎤 Tắt mic</button>
+      <button id="toggleCamBtn" style="display:none;">📷 Tắt cam</button>
+    </div>
+  </div>
+
+  <script src="chat.js"></script>
+</body>
+</html>
