@@ -1,0 +1,44 @@
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <title>Quên mật khẩu</title>
+  <link rel="stylesheet" href="auth.css" />
+</head>
+<body>
+  <div class="auth-wrapper">
+    <div class="auth-image"></div>
+    <div class="auth-container">
+      <div class="form-box">
+        <h2>Quên mật khẩu</h2>
+        <input type="email" id="email" placeholder="Nhập email đã đăng ký" />
+        <button id="send-code-btn">Gửi mã xác minh</button>
+        <p id="auth-message"></p>
+        <p style="text-align:center"><a href="auth.html">← Quay lại đăng nhập</a></p>
+      </div>
+    </div>
+  </div>
+  <script>
+    document.getElementById('send-code-btn').addEventListener('click', async () => {
+      const email = document.getElementById('email').value;
+      const res = await fetch('/api/auth/send-reset-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json();
+      const msg = document.getElementById('auth-message');
+      if (!res.ok) {
+        msg.textContent = data.message || 'Lỗi khi gửi mã xác minh';
+      } else {
+        msg.style.color = 'green';
+        msg.textContent = 'Mã xác minh đã được gửi!';
+        setTimeout(() => {
+          window.location.href = `reset.html?email=${encodeURIComponent(email)}`;
+        }, 1500);
+      }
+    });
+  </script>
+</body>
+</html>
