@@ -178,4 +178,32 @@ exports.getFriendStatus = async (req, res) => {
     }
   };
   
-  
+// 📜 Lấy danh sách bạn bè
+exports.getFriends = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const result = await pool.query(
+      `SELECT 
+          CASE 
+            WHEN user1_id = $1 THEN user2_id 
+            ELSE user1_id 
+          END AS friend_id,
+          u.username,
+          u.avatar
+       FROM friends f
+       JOIN users u 
+         ON u.id = CASE 
+                    WHEN f.user1_id = $1 THEN f.user2_id 
+                    ELSE f.user1_id 
+                  END
+       WHERE f.user1_id = $1 OR f.user2_id = $1`,
+      [userId]
+    );
+
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Lỗi lấy danh sách bạn bè:', err);
+    res.status(500).json({ message: 'Lỗi server' });
+  }
+}; 

@@ -10,5 +10,7 @@ const upload = multer({ storage });
 
 router.get('/me', authMiddleware, profileController.getMe);
 router.put('/me', authMiddleware, upload.single('avatar'), profileController.updateMe);
+router.get('/:id', authMiddleware, profileController.getUserById);
+
 
 module.exports = router;

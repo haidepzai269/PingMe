@@ -908,3 +908,204 @@ box-shadow: 0 0 4px rgba(0,0,0,0.3);
   border: 3px solid red; /* mặc định offline */
   transition: border-color 0.3s;
 }
+.user-options {
+  cursor: pointer;
+  font-size: 20px;
+  margin-right: 5px;
+  color: #555;
+  user-select: none;
+}
+
+.user-options:hover {
+  color: #000;
+}
+
+.popup {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: rgba(0,0,0,0.5);
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+  z-index: 999;
+}
+
+.popup.show {
+  opacity: 1;
+  visibility: visible;
+}
+
+.popup-content {
+  background: linear-gradient(135deg, #ffffff, #f9f9f9);
+  padding: 25px;
+  border-radius: 16px;
+  text-align: center;
+  transform: scale(0.8);
+  transition: transform 0.3s ease;
+  max-width: 320px;
+  width: 90%;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+  word-break: break-word;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+.popup.show .popup-content {
+  transform: scale(1);
+}
+
+.popup-avatar {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  margin-bottom: 12px;
+  border: 3px solid #ff4f81;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.popup-close {
+  position: absolute;
+  top: 15px; right: 20px;
+  font-size: 24px;
+  cursor: pointer;
+  color: #555;
+  transition: color 0.2s ease;
+}
+
+.popup-close:hover {
+  color: #ff4f81;
+}
+
+.popup-username {
+  font-weight: bold;
+  font-size: 1.1rem;
+  margin-top: 8px;
+  color: #333;
+}
+
+.popup-bio {
+  font-size: 0.95rem;
+  color: #666;
+  margin-top: 5px;
+}
+.popup-message-btn {
+  margin-top: auto;
+  width: 100%;
+  padding: 10px;
+  background-color: #f0f0f0; /* trắng xám nhẹ */
+  color: #333;
+  border: none;
+  border-radius: 6px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background 0.3s ease, color 0.3s ease;
+}
+
+.popup-message-btn:hover {
+  background: linear-gradient(90deg, #4facfe 0%, #8e2de2 100%); /* xanh sang tím */
+  color: white;
+}
+/* Popup lịch sử tìm kiếm */
+.search-popup {
+  position: absolute;
+  top: 100%; /* ngay dưới input */
+  left: 0;
+  width: 100%; /* bằng width của wrapper */
+  max-height: 200px;
+  overflow-y: auto;
+
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  
+  border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+  z-index: 1000;
+
+  /* Trạng thái ẩn mặc định */
+  opacity: 0;
+  transform: translateY(-10px);
+  pointer-events: none;
+
+  /* Thêm easing cho mượt */
+  transition: opacity 0.25s ease, transform 0.25s cubic-bezier(0.25, 1.5, 0.5, 1);
+}
+
+/* Khi hiển thị */
+.search-popup.show {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+/* Header popup */
+.search-popup-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  border-bottom: 1px solid rgba(0,0,0,0.1);
+  font-weight: 600;
+  font-size: 16px;
+  color: #333;
+}
+
+/* Nút xóa tất cả */
+#clear-search-history {
+  background: #e53e3e;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  padding: 4px 12px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background-color 0.25s ease;
+  user-select: none;
+}
+
+#clear-search-history:hover {
+  background: #c53030;
+}
+
+/* Danh sách từ khóa */
+#search-history-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+#search-history-list li {
+  padding: 8px 12px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  color: #222;
+  border-radius: 8px;
+  transition: background-color 0.2s ease;
+}
+
+#search-history-list li:hover {
+  background-color: rgba(229, 62, 62, 0.1);
+}
+
+/* Nút xóa từng từ khóa */
+#search-history-list button {
+  background: transparent;
+  border: none;
+  color: #e53e3e;
+  font-weight: bold;
+  cursor: pointer;
+  padding: 0 6px;
+  border-radius: 50%;
+  transition: background-color 0.2s ease;
+}
+
+#search-history-list button:hover {
+  background-color: #e53e3e;
+  color: white;
+}

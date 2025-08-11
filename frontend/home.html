@@ -20,13 +20,23 @@
     <!-- Sidebar -->
     <aside class="sidebar">
       <button onclick="location.href='home.html'">Home</button>
-      <button onclick="location.href='chat.html'">Chat</button>
+      <button id="btn-chat">Chat</button>
     </aside>
 
     <!-- Danh sách người dùng -->
     <main class="main-section">
-      <input type="text" id="search" placeholder="Tìm kiếm bạn bè ..." />
+      <div id="search-wrapper" style="position: relative; display: inline-block; width: 100%;">
+        <input type="text" id="search" placeholder="Tìm kiếm bạn bè ..." autocomplete="off" />
+        <div id="search-history-popup" class="search-popup ">
+          <div class="search-popup-header">
+            <span>Lịch sử tìm kiếm</span>
+            <button id="clear-search-history">Xóa tất cả</button>
+          </div>
+          <ul id="search-history-list"></ul>
+        </div>
+      </div>
       <h3 class="friend-suggestion-title">Gợi ý bạn bè</h3>
+      <div id="search-results" class="hidden"></div>
       <div id="user-list"></div>
     </main>
 
@@ -68,7 +78,15 @@
     <h2>Xin lỗi , trang không hoạt động</h2>
     <p>Thiết bị của bạn có màn hình quá nhỏ để sử dụng trang web này.</p>
   </div>
-
+  <div id="user-info-popup" class="popup">
+    <div class="popup-content">
+      <span class="popup-close" onclick="closeUserInfoPopup()">&times;</span>
+      <img class="popup-avatar" src="" alt="avatar">
+      <h2 class="popup-username">Tên</h2>
+      <p class="popup-bio">Giới thiệu</p>
+      <button class="popup-message-btn" onclick="startChatWithUser()">Nhắn tin</button>
+    </div>
+  </div> 
   <script type="module" src="authFetch.js"></script>
   <script type="module" src="home.js"></script>
   <script>

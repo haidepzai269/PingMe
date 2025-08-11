@@ -84,3 +84,39 @@ exports.getMe = async (req, res) => {
     }
   };
   
+// user khác
+exports.getUserById = async (req, res) => {
+    try {
+      const { id } = req.params;
+  
+      // Lấy thông tin user
+      const result = await pool.query(
+        'SELECT id, username, avatar, bio FROM users WHERE id = $1',
+        [id]
+      );
+  
+      if (result.rows.length === 0) {
+        return res.status(404).json({ message: 'User không tồn tại' });
+      }
+  
+      // Đếm số bạn bè
+      const countResult = await pool.query(
+        `SELECT COUNT(*) AS count
+         FROM friends
+         WHERE user1_id = $1 OR user2_id = $1`,
+        [id]
+      );
+  
+      const profile = {
+        ...result.rows[0],
+        friends_count: parseInt(countResult.rows[0].count, 10)
+      };
+  
+      res.json(profile);
+    } catch (error) {
+      console.error('Lỗi getUserById:', error);
+      res.status(500).json({ message: 'Lỗi server' });
+    }
+  };
+  
+

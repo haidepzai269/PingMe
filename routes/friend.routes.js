@@ -10,5 +10,5 @@ router.post('/accept/:requestId', authMiddleware, friendController.acceptRequest
 router.delete('/decline/:requestId', authMiddleware, friendController.declineRequest);
 router.delete('/unfriend/:friendId', authMiddleware, friendController.unfriend);
 router.get('/status/:userId', authMiddleware, friendController.getFriendStatus);
-
+router.get('/', authMiddleware, friendController.getFriends);
 module.exports = router;

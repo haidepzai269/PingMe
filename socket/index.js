@@ -7,13 +7,17 @@ function socketHandler(io) {
   io.on('connection', (socket) => {
     console.log('Socket connected:', socket.id);
 
-    // Optional: verify token in handshake (nếu FE gửi kèm)
+    // Nếu handshake có token thì verify
     if (socket.handshake?.auth?.token) {
       try {
         const payload = jwt.verify(socket.handshake.auth.token, process.env.ACCESS_TOKEN_SECRET);
         socket.userId = payload.id ?? payload.userId ?? payload.sub;
         onlineUsers.set(String(socket.userId), socket.id);
         console.log('Registered via handshake token userId=', socket.userId);
+
+        // Join room cá nhân
+        console.log('User connected:', socket.userId);
+        socket.join(`user_${socket.userId}`);
 
         // Báo cho mọi người user này online
         socket.broadcast.emit('user:online', { userId: socket.userId });
@@ -31,6 +35,10 @@ function socketHandler(io) {
       socket.userId = String(userId);
       onlineUsers.set(socket.userId, socket.id);
       console.log(`Socket ${socket.id} registered for user ${userId}`);
+
+      // Join room cá nhân
+      console.log('User connected:', socket.userId);
+      socket.join(`user_${socket.userId}`);
 
       // Báo cho mọi người user này online
       socket.broadcast.emit('user:online', { userId });
@@ -81,6 +89,8 @@ function socketHandler(io) {
       } else {
         console.log('Socket disconnected', socket.id);
       }
+
+      console.log('User disconnected:', socket.userId);
     });
   });
 }
