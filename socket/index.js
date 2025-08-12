@@ -71,6 +71,25 @@ function socketHandler(io) {
         io.to(senderSock).emit('friend:request_declined', { senderId, receiverId });
       }
     });
+    // block real time 
+    // Thêm event nhận từ client khi block/unblock
+    socket.on('block:user', async ({ blockedUserId, action }) => {
+  // action: 'block' hoặc 'unblock'
+  const blockerId = socket.userId;
+  if (!blockerId || !blockedUserId) return;
+
+  // Phát event cho cả 2 người: blocker và blockedUser
+  [blockerId, blockedUserId].forEach(userId => {
+    const sockId = onlineUsers.get(String(userId));
+    if (sockId) {
+      io.to(sockId).emit('block:update', {
+        blockerId,
+        blockedUserId,
+        action
+      });
+    }
+  });
+    });
 
     socket.on('friend:unfriend', ({ userId, friendId }) => {
       const friendSock = onlineUsers.get(String(friendId));

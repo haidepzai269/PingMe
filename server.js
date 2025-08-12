@@ -17,12 +17,15 @@ const profileRoutes = require('./routes/profile.routes');
 const userRoutes = require('./routes/user.routes');
 const friendRoutes = require('./routes/friend.routes');
 const searchRoutes = require('./routes/search.routes');
+const blockRoutes = require('./routes/block.routes');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', profileRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/friends', friendRoutes);
 app.use('/api/search', searchRoutes);
+
+app.use('/api/block', blockRoutes);
 
 // Khi vào / => mở auth.html
 app.get('/', (req, res) => {
@@ -41,6 +44,7 @@ const io = new Server(server, {
 // ===== Gắn io vào req cho message routes =====
 const messageRoutes = require('./routes/message.routes');
 app.use('/api/messages', (req, res, next) => {
+  console.log(`Received ${req.method} request at /api/messages`);
   req.io = io; // Gắn io vào req để controller dùng
   next();
 }, messageRoutes);
