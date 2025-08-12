@@ -16,12 +16,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const chatHeader = document.getElementById('chat-header');
   chatHeader.innerHTML = `
-    <img id="chat-avatar" src="${user.avatar || 'default-avatar.png'}" alt="" class="avatar-status">
-    <div>
-      <span>${user.username}</span>
-      <div id="user-status-text" class="offline">🔴 Không hoạt động</div>
-    </div>
+  <img id="chat-avatar" src="${user.avatar || 'default-avatar.png'}" alt="" class="avatar-status">
+  <div>
+    <span>${user.username}</span>
+    <div id="user-status-text" class="offline">🔴 Không hoạt động</div>
+  </div>
+  <button id="block-btn" style="margin-left: auto; display : none">Loading...</button>
   `;
+
 
   const avatarEl = document.getElementById('chat-avatar');
   const statusTextEl = document.getElementById('user-status-text');
@@ -167,23 +169,38 @@ document.addEventListener('DOMContentLoaded', async () => {
     messageList.appendChild(msgDiv);
     messageList.scrollTop = messageList.scrollHeight;
   }
-
+  const uploadBtn = document.getElementById('uploadBtn');
+  uploadBtn.addEventListener('click', () => {
+    fileInput.click();
+  });
   sendBtn.addEventListener('click', async () => {
+    if (messageInput.disabled) {
+      alert('Bạn không thể nhắn tin với người này.');
+      return;
+    }
     const formData = new FormData();
     formData.append('receiver_id', chatWithUserId);
-
+  
     const text = messageInput.value.trim();
     if (text) formData.append('content', text);
     if (fileInput.files[0]) formData.append('file', fileInput.files[0]);
     if (!text && !fileInput.files[0]) return;
-
-    const res = await authFetch('/api/messages', { method: 'POST', body: formData });
-    const message = await res.json();
-
-    addMessageToUI(message);
-
-    messageInput.value = '';
-    fileInput.value = '';
+  
+    try {
+      const res = await authFetch('/api/messages', { method: 'POST', body: formData });
+      if (!res.ok) {
+        const errorData = await res.json();
+        alert(errorData.message || 'Lỗi khi gửi tin nhắn');
+        return;
+      }
+      const message = await res.json();
+      addMessageToUI(message);
+      messageInput.value = '';
+      fileInput.value = '';
+    } catch (error) {
+      console.error('Lỗi gửi tin nhắn:', error);
+      alert('Lỗi khi gửi tin nhắn');
+    }
   });
 
   socket.on('message:new', async (msg) => {
@@ -287,7 +304,152 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
   });
+  // hàm block 
+  // Gọi cập nhật ngay
+  await updateBlockButton();
+  async function updateBlockButton() {
+    const res = await authFetch(`/api/block/check/${chatWithUserId}`);
+    const data = await res.json();
+  
+    const blockBtn = document.getElementById('block-btn');
+  
+    if (data.iBlockedThem) {
+      blockBtn.textContent = 'Bỏ chặn';
+    } else {
+      blockBtn.textContent = 'Chặn';
+    }
 
+    blockBtn.style.display = 'inline-block';
+
+
+    // Cập nhật input chat theo trạng thái block
+    updateChatInput(!data.iBlockedThem && !data.theyBlockedMe);
+  }
+  function updateChatInput(enabled) {
+    messageInput.disabled = !enabled;
+    sendBtn.disabled = !enabled;
+    if (!enabled) {
+      messageInput.placeholder = 'Bạn không thể nhắn tin với người này';
+    } else {
+      messageInput.placeholder = 'Nhập tin nhắn...';
+    }
+  }
+  const blockBtn = document.getElementById('block-btn');
+  blockBtn.addEventListener('click', async () => {
+    if (blockBtn.textContent === 'Chặn') {
+      // Gọi API block
+      const res = await authFetch(`/api/block/${chatWithUserId}`, { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        blockBtn.textContent = 'Bỏ chặn';
+        socket.emit('block:user', { blockedUserId: chatWithUserId, action: 'block' });
+        updateChatInput(false);
+      } else {
+        alert('Không thể chặn người này');
+      }
+    } else {
+      // Gọi API unblock
+      const res = await authFetch(`/api/block/${chatWithUserId}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) {
+        blockBtn.textContent = 'Chặn';
+        socket.emit('block:user', { blockedUserId: chatWithUserId, action: 'unblock' });
+        updateBlockButton(); // Kiểm tra lại trạng thái block và cập nhật input
+      } else {
+        alert('Không thể bỏ chặn');
+      }
+    }
+  });
+  socket.on('block:update', ({ blockerId, blockedUserId, action }) => {
+    // Nếu chính mình hoặc người chat bị block/unblock
+    if (
+      (String(blockerId) === String(me.id) && String(blockedUserId) === String(chatWithUserId)) ||
+      (String(blockerId) === String(chatWithUserId) && String(blockedUserId) === String(me.id))
+    ) {
+      if (action === 'block') {
+        updateChatInput(false);
+        document.getElementById('block-btn').textContent =
+          String(blockerId) === String(me.id) ? 'Bỏ chặn' : 'Chặn';
+      } else if (action === 'unblock') {
+        updateBlockButton();
+      }
+    }
+  });
+
+  // Tạo overlay + ảnh phóng to, ẩn mặc định
+  const imgOverlay = document.createElement('div');
+  imgOverlay.id = 'img-hover-overlay';
+  imgOverlay.style.position = 'fixed';
+  imgOverlay.style.top = '0';
+  imgOverlay.style.left = '0';
+  imgOverlay.style.width = '100vw';
+  imgOverlay.style.height = '100vh';
+  imgOverlay.style.backgroundColor = 'rgba(0,0,0,0.7)';
+  imgOverlay.style.display = 'none';
+  imgOverlay.style.justifyContent = 'center';
+  imgOverlay.style.alignItems = 'center';
+  imgOverlay.style.zIndex = '10000';
+  imgOverlay.style.cursor = 'zoom-out';
+  imgOverlay.style.transition = 'opacity 0.3s ease';
+
+  const enlargedImg = document.createElement('img');
+  enlargedImg.style.maxWidth = '90vw';
+  enlargedImg.style.maxHeight = '90vh';
+  enlargedImg.style.borderRadius = '8px';
+  enlargedImg.style.boxShadow = '0 0 20px rgba(255,255,255,0.8)';
+  enlargedImg.style.transform = 'scale(0.8)';
+  enlargedImg.style.transition = 'transform 0.3s ease';
+
+  imgOverlay.appendChild(enlargedImg);
+  document.body.appendChild(imgOverlay);
+
+  let hideTimeout = null;
+
+  document.addEventListener('mouseover', (e) => {
+    if (e.target.tagName === 'IMG' && e.target.closest('#chat-messages')) {
+      if (hideTimeout) {
+        clearTimeout(hideTimeout);
+        hideTimeout = null;
+      }
+      enlargedImg.src = e.target.src;
+      imgOverlay.style.display = 'flex';
+      setTimeout(() => {
+        imgOverlay.style.opacity = '1';
+        enlargedImg.style.transform = 'scale(1)';
+      }, 10);
+    }
+  });
+  
+  function hideOverlay() {
+    imgOverlay.style.opacity = '0';
+    enlargedImg.style.transform = 'scale(0.8)';
+    hideTimeout = setTimeout(() => {
+      imgOverlay.style.display = 'none';
+      enlargedImg.src = '';
+      hideTimeout = null;
+    }, 300);
+  }
+  
+  document.addEventListener('mouseout', (e) => {
+    if (e.target.tagName === 'IMG' && e.target.closest('#chat-messages')) {
+      // delay 200ms trước khi ẩn, nếu không di chuột vào overlay thì mới ẩn
+      hideTimeout = setTimeout(() => {
+        if (!imgOverlay.matches(':hover')) {
+          hideOverlay();
+        } else {
+          // nếu đang hover overlay thì không ẩn
+          clearTimeout(hideTimeout);
+          hideTimeout = null;
+        }
+      }, 200);
+    }
+  });
+  
+  imgOverlay.addEventListener('mouseleave', hideOverlay);
+  imgOverlay.addEventListener('click', hideOverlay);
+  
+
+  
 
   // Gọi luôn khi load trang
   loadFriends();

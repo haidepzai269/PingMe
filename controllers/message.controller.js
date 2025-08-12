@@ -30,13 +30,14 @@ exports.sendMessage = async (req, res) => {
 
   try {
     if (req.file) {
+      console.log('File nhận được:', req.file);
       const ext = path.extname(req.file.originalname).toLowerCase();
       media_type = ext.match(/\.(mp4|mov|avi|mkv)$/) ? 'video' : 'image';
 
       const result = await cloudinary.uploader.upload(req.file.path, {
         resource_type: media_type === 'video' ? 'video' : 'image'
       });
-
+      console.log('Kết quả upload Cloudinary:', result);
       media_url = result.secure_url;
 
       // Xoá file tạm
