@@ -27,8 +27,6 @@ app.use('/api/users', userRoutes);
 app.use('/api/friends', friendRoutes);
 app.use('/api/search', searchRoutes);
 app.use('/api/block', blockRoutes);
-app.use('/api/groups', groupRoutes);
-
 
 // Khi vào / => mở auth.html
 app.get('/', (req, res) => {
@@ -43,7 +41,7 @@ const io = new Server(server, {
     methods: ['GET', 'POST']
   }
 });
-
+app.set('io', io); // 
 // ===== Gắn io vào req cho message routes =====
 const messageRoutes = require('./routes/message.routes');
 app.use('/api/messages', (req, res, next) => {

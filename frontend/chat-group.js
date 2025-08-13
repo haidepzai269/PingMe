@@ -1,5 +1,10 @@
 import { authFetch } from './authFetch.js';
 
+// === Kết nối socket toàn cục (dùng chung với chat.js) ===
+const socket = io('/', {
+  auth: { token: localStorage.getItem('accessToken') } // sửa key token cho đồng nhất
+});
+
 document.addEventListener('DOMContentLoaded', async () => {
   const createGroupBtn = document.getElementById('create-group-btn');
   const popup = document.getElementById('create-group-popup');
@@ -67,39 +72,111 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // ====== Xác nhận tạo nhóm ======
   confirmBtn.addEventListener('click', async () => {
-    const name = groupNameInput.value.trim();
-    if (!name) return alert('Vui lòng nhập tên nhóm');
+  const name = groupNameInput.value.trim();
+  if (!name) return alert('Vui lòng nhập tên nhóm');
 
-    const selectedUserIds = [...friendListContainer.querySelectorAll('input[type="checkbox"]:checked')]
-      .map(cb => cb.value);
+  const selectedUserIds = [...friendListContainer.querySelectorAll('input[type="checkbox"]:checked')]
+    .map(cb => cb.value);
 
-    if (selectedUserIds.length === 0) return alert('Vui lòng chọn ít nhất 1 thành viên');
+  if (selectedUserIds.length === 0) return alert('Vui lòng chọn ít nhất 1 thành viên');
 
-    try {
-      await authFetch('/api/groups', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, members: selectedUserIds })
-      });
-      await loadGroups(); // reload danh sách nhóm từ backend
-      closePopup();
-    } catch (err) {
-      console.error('Lỗi tạo nhóm:', err);
-    }
+  try {
+    const res = await authFetch('/api/groups', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, members: selectedUserIds })
+    });
+    const data = await res.json();
+
+    // // 🔹 Tự thêm nhóm vào danh sách cho người tạo
+    // const myUserId = JSON.parse(localStorage.getItem('user')).id;
+    // const newGroup = { id: data.groupId, name, owner_id: myUserId };
+    // groups.push(newGroup);
+    // renderGroups();
+
+    closePopup();
+  } catch (err) {
+    console.error('Lỗi tạo nhóm:', err);
+  }
   });
 
+  // show popup
+  function showConfirm(message) {
+    return new Promise((resolve) => {
+      const popup = document.getElementById('confirm-leave-popup');
+      const overlay = document.getElementById('popup-overlay');
+      const confirmText = document.getElementById('confirm-leave-text');
+      const cancelBtn = document.getElementById('cancel-leave-btn');
+      const okBtn = document.getElementById('confirm-leave-btn');
+  
+      confirmText.textContent = message;
+      popup.style.display = 'block';
+      overlay.style.display = 'block';
+  
+      function cleanup() {
+        popup.style.display = 'none';
+        overlay.style.display = 'none';
+        cancelBtn.removeEventListener('click', onCancel);
+        okBtn.removeEventListener('click', onOk);
+      }
+  
+      function onCancel() {
+        cleanup();
+        resolve(false);
+      }
+  
+      function onOk() {
+        cleanup();
+        resolve(true);
+      }
+  
+      cancelBtn.addEventListener('click', onCancel);
+      okBtn.addEventListener('click', onOk);
+    });
+  }
+  
   // ====== Render danh sách nhóm ======
   function renderGroups() {
     groupListEl.innerHTML = '';
     groups.forEach(group => {
       const li = document.createElement('li');
       li.classList.add('group-item');
-      li.textContent = group.name;
+  
+      // Thêm tên nhóm và nút X
+      li.innerHTML = `
+        <span class="group-name">${group.name}</span>
+        <button class="leave-group-btn" title="Thoát nhóm">×</button>
+      `;
       li.dataset.id = group.id;
-      li.addEventListener('click', () => openGroupChat(group.id, group.name));
+  
+      // Click vào tên nhóm thì mở chat
+      li.querySelector('.group-name').addEventListener('click', () => {
+        openGroupChat(group.id, group.name);
+      });
+  
+      // Click nút X thì thoát nhóm
+      li.querySelector('.leave-group-btn').addEventListener('click', async (e) => {
+        e.stopPropagation(); // tránh mở chat khi bấm X
+        const confirmed = await showConfirm(`Bạn có chắc muốn thoát nhóm "${group.name}"?`);
+        if (!confirmed) return;
+        try {
+          const res = await authFetch(`/api/groups/${group.id}/leave`, {
+            method: 'DELETE'
+          });
+          const data = await res.json();
+          if (data.success) {
+            groups = groups.filter(g => g.id !== group.id);
+            renderGroups();
+          }
+        } catch (err) {
+          console.error('Lỗi thoát nhóm:', err);
+        }
+      });
+  
       groupListEl.appendChild(li);
     });
   }
+  
 
   // ====== Mở khung chat nhóm ======
   function openGroupChat(groupId, groupName) {
@@ -108,9 +185,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     chatMessages.innerHTML = `
       <div class="message other"><p>Xin chào các thành viên trong nhóm "${groupName}"</p></div>
     `;
-    // join socket room
     socket.emit('join:group', { groupId });
   }
+
+  // ====== Lắng nghe sự kiện nhóm mới ======
+  socket.on('group:new', (group) => {
+    const myUserId = JSON.parse(localStorage.getItem('user')).id;
+    if (group.owner_id === myUserId) return; // đã thêm rồi
+    if (!groups.find(g => g.id === group.id)) {
+      groups.push(group);
+      renderGroups();
+    }
+  });
+  
 
   // ====== Load nhóm khi mở trang ======
   await loadGroups();

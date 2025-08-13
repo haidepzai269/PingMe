@@ -846,3 +846,54 @@
   margin-bottom: 8px;
 }
 
+/* Gói phần gợi ý trò chuyện và danh sách nhóm để cuộn riêng */
+#user-suggestions {
+  max-height: 200px; /* hoặc auto theo thiết kế */
+  overflow-y: auto;
+  padding-right: 5px; /* tránh tràn thanh cuộn */
+}
+
+#group-list {
+  max-height: 200px; /* hoặc auto */
+  overflow-y: auto;
+  padding-right: 5px;
+}
+
+/* Thanh cuộn đẹp */
+#user-suggestions::-webkit-scrollbar,
+#group-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+#user-suggestions::-webkit-scrollbar-thumb,
+#group-list::-webkit-scrollbar-thumb {
+  background: linear-gradient(145deg, #a8edea, #fed6e3);
+  border-radius: 10px;
+}
+
+#user-suggestions::-webkit-scrollbar-thumb:hover,
+#group-list::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(145deg, #fed6e3, #a8edea);
+}
+
+#user-suggestions::-webkit-scrollbar-track,
+#group-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+/* ===== Thanh cuộn pastel cho khung chat ===== */
+.messages::-webkit-scrollbar {
+  width: 6px;
+}
+
+.messages::-webkit-scrollbar-thumb {
+  background: linear-gradient(145deg, #a8edea, #fed6e3);
+  border-radius: 10px;
+}
+
+.messages::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(145deg, #fed6e3, #a8edea);
+}
+
+.messages::-webkit-scrollbar-track {
+  background: transparent;
+}
