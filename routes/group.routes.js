@@ -6,5 +6,7 @@ const authMiddleware = require('../middleware/auth.middleware');
 
 router.post('/', authMiddleware, groupController.createGroup);
 router.get('/my', authMiddleware, groupController.getMyGroups);
+router.delete('/:groupId/leave', authMiddleware, groupController.leaveGroup);
+router.get('/:groupId/messages', authMiddleware, groupController.getGroupMessages);
 
 module.exports = router;

@@ -210,3 +210,38 @@
     display: none;
   }
   
+  .group-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 8px;
+    border-bottom: 1px solid #ddd;
+  }
+  
+  .group-item .leave-group-btn {
+    background: none;
+    border: none;
+    color: #999;
+    font-size: 16px;
+    cursor: pointer;
+  }
+  
+  .group-item .leave-group-btn:hover {
+    color: red;
+  }
+  
+  .group-item .group-name {
+    flex: 1;
+    cursor: pointer;
+  }
+  #confirm-leave-popup button {
+    padding: 5px 10px;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+  }
+  
+  #confirm-leave-popup button:hover {
+    opacity: 0.85;
+  }
+  
