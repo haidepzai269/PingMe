@@ -28,7 +28,16 @@ function socketHandler(io) {
         console.log('Socket handshake token invalid, client should register manually');
       }
     }
+    // nhóm groups
+    socket.on('join:group', ({ groupId }) => {
+      socket.join(`group_${groupId}`);
+      console.log(`User ${socket.id} joined group ${groupId}`);
+    });
 
+    socket.on('group:message', ({ groupId, content, sender }) => {
+      // Tạm thời chưa lưu DB, chỉ broadcast
+      io.to(`group_${groupId}`).emit('group:message', { groupId, content, sender });
+    });
     // Client tự đăng ký sau khi login HTTP
     socket.on('register', (userId) => {
       if (!userId) return;
