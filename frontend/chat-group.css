@@ -1,0 +1,212 @@
+/* Overlay nền tối mờ */
+#popup-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 999;
+    backdrop-filter: blur(2px); /* hơi mờ nền phía sau */
+  }
+  
+  /* Popup tạo nhóm */
+  #create-group-popup {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 340px;
+    max-width: 92%;
+    max-height: 80vh;
+    overflow-y: auto;
+  
+    /* Nền trong suốt kiểu glass */
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(6px);
+    border-radius: 12px;
+    padding: 18px;
+  
+    box-shadow: 0 8px 25px rgba(0,0,0,0.25);
+    z-index: 1000;
+  
+    animation: fadeInPopup 0.25s ease;
+  }
+  
+  /* Hiệu ứng hiện popup */
+  @keyframes fadeInPopup {
+    from { opacity: 0; transform: translate(-50%, -48%); }
+    to { opacity: 1; transform: translate(-50%, -50%); }
+  }
+  
+  #create-group-popup h3 {
+    margin: 0 0 12px 0;
+    font-size: 18px;
+    font-weight: bold;
+    color: #444;
+    text-align: center;
+  }
+  
+  /* Ô nhập tên nhóm */
+  #group-name {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    margin-bottom: 12px;
+    font-size: 14px;
+  }
+  
+  #group-name:focus {
+    outline: none;
+    border-color: #a8edea;
+    box-shadow: 0 0 0 2px rgba(168, 237, 234, 0.4);
+  }
+  
+  /* Danh sách bạn bè */
+  #friend-list-for-group {
+    border: 1px solid #eee;
+    border-radius: 8px;
+    padding: 8px;
+    max-height: 240px;
+    overflow-y: auto;
+    margin-bottom: 12px;
+    background: rgba(255, 255, 255, 0.6);
+  }
+  
+  #friend-list-for-group label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.2s ease;
+  }
+  
+  #friend-list-for-group label:hover {
+    background: linear-gradient(145deg, #fff5f7, #fef4ea); /* pastel nhẹ */
+  }
+  
+  #friend-list-for-group input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    margin: 0;
+  }
+  
+  /* Nút hủy */
+  #cancel-create-group {
+    padding: 6px 12px;
+    background: linear-gradient(145deg, #ffffffaa, #ffffff55); /* trắng trong mờ */
+    border: none;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: bold;
+    color: #333;
+    transition: all 0.25s ease;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  }
+  
+  #cancel-create-group:hover {
+    background: linear-gradient(145deg, #f5f5f5, #ececec);
+  }
+  
+  /* Nút tạo nhóm */
+  #confirm-create-group {
+    padding: 6px 12px;
+    background: linear-gradient(145deg, #a8edea, #fed6e3); /* đồng bộ pastel với chat.css */
+    border: none;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: bold;
+    color: #333;
+    transition: all 0.25s ease;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  }
+  
+  #confirm-create-group:hover {
+    background: linear-gradient(145deg, #fed6e3, #a8edea);
+    transform: scale(1.05);
+  }
+  
+  /* Responsive */
+  @media (max-width: 420px) {
+    #create-group-popup { width: 92%; padding: 14px; }
+    #friend-list-for-group { max-height: 40vh; }
+  }
+  .create-group-icon {
+    background: none;
+    border: none;
+    padding: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background 0.25s ease, transform 0.2s ease;
+  }
+  
+  .create-group-icon:hover {
+    background: rgba(0,0,0,0.05);
+    transform: scale(1.1);
+  }
+  
+  .create-group-icon svg {
+    stroke: #888; /* màu xám mỏng */
+  }
+  
+  .create-group-icon:hover svg {
+    stroke: #555; /* đậm hơn khi hover */
+  }
+  
+  /* ===== Style cho nhóm chat ===== */
+.group-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #fff;
+    border-radius: 12px;
+    padding: 8px 12px;
+    margin-bottom: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    cursor: pointer;
+  }
+  
+  .group-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+  }
+  
+  /* Tên nhóm */
+  .group-item .friend-name {
+    flex: 1;
+    font-weight: 500;
+    font-size: 15px;
+    color: #333;
+    margin-left: 8px;
+  }
+  
+  /* Nút nhắn tin nhóm */
+  .group-item .msg-btn {
+    background: linear-gradient(135deg, #b3e5fc, #81d4fa);
+    border: none;
+    border-radius: 16px;
+    padding: 4px 10px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+  
+  .group-item .msg-btn:hover {
+    background: linear-gradient(135deg, #81d4fa, #4fc3f7);
+  }
+  
+  /* Ẩn avatar nhóm vì không cần */
+  .group-item .avatar-wrapper {
+    display: none;
+  }
+  

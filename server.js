@@ -18,14 +18,17 @@ const userRoutes = require('./routes/user.routes');
 const friendRoutes = require('./routes/friend.routes');
 const searchRoutes = require('./routes/search.routes');
 const blockRoutes = require('./routes/block.routes');
+const groupRoutes = require('./routes/group.routes');
+
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', profileRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/friends', friendRoutes);
 app.use('/api/search', searchRoutes);
-
 app.use('/api/block', blockRoutes);
+app.use('/api/groups', groupRoutes);
+
 
 // Khi vào / => mở auth.html
 app.get('/', (req, res) => {
@@ -48,6 +51,10 @@ app.use('/api/messages', (req, res, next) => {
   req.io = io; // Gắn io vào req để controller dùng
   next();
 }, messageRoutes);
+app.use('/api/groups', (req, res, next) => {
+  req.io = io;
+  next();
+}, groupRoutes);
 
 // Start socket handlers
 socketHandler(io);
