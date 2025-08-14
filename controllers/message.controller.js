@@ -45,10 +45,11 @@ exports.sendMessage = async (req, res) => {
     }
 
     const query = `
-      INSERT INTO messages (sender_id, receiver_id, content, media_url, media_type)
-      VALUES ($1, $2, $3, $4, $5) RETURNING *;
-    `;
-    const values = [sender_id, receiver_id, content || null, media_url, media_type];
+    INSERT INTO messages (sender_id, receiver_id, content, media_url, media_type, unread)
+    VALUES ($1, $2, $3, $4, $5, true) RETURNING *;
+  `;
+  const values = [sender_id, receiver_id, content || null, media_url, media_type];
+  
 
     const { rows } = await pool.query(query, values);
     const message = rows[0];
@@ -110,9 +111,10 @@ exports.markAsSeen = async (req, res) => {
 
         // Cập nhật seen_at
         const update = await pool.query(
-            `UPDATE messages SET seen_at = NOW() WHERE id = $1 RETURNING *`,
-            [messageId]
+          `UPDATE messages SET seen_at = NOW(), unread = false WHERE id = $1 RETURNING *`,
+          [messageId]
         );
+        
         const updatedMessage = update.rows[0];
 
         // Emit realtime cho người gửi
@@ -212,3 +214,51 @@ exports.deleteMessage = async (req, res) => {
   };
   
   
+// Lấy số lượng tin nhắn chưa đọc từ từng người
+exports.getUnreadCounts = async (req, res) => {
+  const me = req.user.id;
+
+  try {
+    const { rows } = await pool.query(
+      `SELECT sender_id, COUNT(*) AS unread_count
+       FROM messages
+       WHERE receiver_id = $1 AND unread = true
+       GROUP BY sender_id`,
+      [me]
+    );
+
+    // Trả về object { userId: count }
+    const result = {};
+    rows.forEach(r => {
+      result[r.sender_id] = parseInt(r.unread_count);
+    });
+
+    res.json(result);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Lỗi khi lấy số lượng tin nhắn chưa đọc' });
+  }
+};
+
+exports.markAllAsSeen = async (req, res) => {
+  const me = req.user.id;
+  const { userId } = req.params;
+
+  try {
+    const { rows } = await pool.query(
+      `UPDATE messages SET seen_at = NOW(), unread = false
+       WHERE sender_id = $1 AND receiver_id = $2 AND unread = true
+       RETURNING id`,
+      [userId, me]
+    );
+
+    rows.forEach(r => {
+      req.io.to(`user_${userId}`).emit('message:seen', { messageId: r.id });
+    });
+
+    res.json({ success: true, updatedCount: rows.length });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Lỗi khi đánh dấu tất cả tin nhắn đã xem' });
+  }
+};
