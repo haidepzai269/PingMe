@@ -75,17 +75,18 @@ document.addEventListener('DOMContentLoaded', async () => {
   async function loadMessages() {
     const res = await authFetch(`/api/messages/${chatWithUserId}`);
     const messages = await res.json();
-
+  
     document.querySelectorAll('.skeleton-message').forEach(el => el.remove());
-
+  
     messages.forEach(addMessageToUI);
-
-    // Nếu tin nhắn mới nhất là của đối phương và chưa xem -> markAsSeen
-    const lastMsg = messages[messages.length - 1];
-    if (lastMsg && lastMsg.sender_id == chatWithUserId && !lastMsg.seen_at) {
-      await authFetch(`/api/messages/${lastMsg.id}/seen`, { method: 'PUT' });
-    }
+  
+    // Reset badge ngay khi load tin nhắn (frontend)
+    resetUnread(chatWithUserId);
+  
+    // Đánh dấu tất cả tin nhắn từ người chat là đã xem (backend)
+    await authFetch(`/api/messages/${chatWithUserId}/seen_all`, { method: 'PUT' });
   }
+  
 
   function addMessageToUI(msg) {
     const msgDiv = document.createElement('div');
@@ -204,15 +205,35 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   socket.on('message:new', async (msg) => {
-    if (msg.sender_id == chatWithUserId || msg.receiver_id == chatWithUserId) {
+    const isCurrentChat = msg.sender_id == chatWithUserId || msg.receiver_id == chatWithUserId;
+  
+    if (isCurrentChat) {
+      // Thêm tin nhắn vào UI
       addMessageToUI(msg);
-
-      // Nếu tin nhắn là của đối phương thì đánh dấu đã xem ngay
+  
+      // Nếu là tin của đối phương thì đánh dấu đã xem
       if (msg.sender_id == chatWithUserId) {
         await authFetch(`/api/messages/${msg.id}/seen`, { method: 'PUT' });
+  
+        // Reset badge của cuộc trò chuyện này
+        unreadCounts.set(chatWithUserId, 0);
+        updateUnreadBadge(chatWithUserId);
       }
+    } else {
+      // Tin nhắn thuộc chat khác → tăng số tin nhắn chưa đọc
+      const senderId = msg.sender_id;
+      unreadCounts.set(senderId, (unreadCounts.get(senderId) || 0) + 1);
+      updateUnreadBadge(senderId);
+  
+      // Lấy thông tin người gửi để hiện thông báo
+      const senderEl = document.querySelector(`#user-suggestions .msg-btn[data-id="${senderId}"]`)?.closest('.friend-item');
+      const senderName = senderEl?.querySelector('.friend-name')?.textContent || 'Người lạ';
+      const avatar = senderEl?.querySelector('img')?.src || 'default-avatar.png';
+  
+      showToastNotification(msg, { username: senderName, avatar });
     }
   });
+  
 
   // Realtime khi tin nhắn được xem
   socket.on('message:seen', ({ messageId }) => {
@@ -237,39 +258,50 @@ document.addEventListener('DOMContentLoaded', async () => {
       friends.forEach(friend => {
         const li = document.createElement('li');
         li.classList.add('friend-item');
-      
         li.innerHTML = `
           <div class="avatar-wrapper" style="position: relative;">
-            <img src="${friend.avatar || 'default-avatar.png'}" 
-                 alt="${friend.username}" 
-                 class="avatar offline">
+            <img src="${friend.avatar || 'default-avatar.png'}" alt="${friend.username}" class="avatar offline">
             <span class="online-dot" style="display:none;"></span>
           </div>
           <span class="friend-name">${friend.username}</span>
           <button class="msg-btn" data-id="${friend.friend_id}">💬 Nhắn tin</button>
         `;
-      
         listEl.appendChild(li);
+      
+
       });
+      
       
       //
       // Sau khi load xong danh sách bạn bè -> cập nhật trạng thái online ngay
      const onlineListEvent = window._lastOnlineList; 
      if (onlineListEvent) {
-  onlineListEvent.online.forEach(friendId => {
+     onlineListEvent.online.forEach(friendId => {
     updateFriendOnlineStatus(friendId, true);
   });
      }
-
+      // Cập nhật badge từ server
+      await loadUnreadCounts();
       //
 
       // Sự kiện bấm nút nhắn tin
-      listEl.addEventListener('click', (e) => {
-        if (e.target.classList.contains('msg-btn')) {
-          const id = e.target.dataset.id;
-          window.location.href = `chat.html?user=${id}`;
-        }
+      // Sự kiện bấm nút nhắn tin
+      listEl.addEventListener('click', async (e) => {
+  if (e.target.classList.contains('msg-btn')) {
+    const id = e.target.dataset.id;
+
+    // Reset badge trên frontend ngay lập tức
+    unreadCounts.set(id, 0);
+    updateUnreadBadge(id);
+
+    // Gọi API mark tất cả tin nhắn đã xem
+    await authFetch(`/api/messages/${id}/seen_all`, { method: 'PUT' });
+
+    // Chuyển sang trang chat
+    window.location.href = `chat.html?user=${id}`;
+  }
       });
+
 
     } catch (err) {
       console.error('Lỗi load bạn bè:', err);
@@ -292,18 +324,24 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // tìm kiếm 
   // === Tìm kiếm bạn bè trong danh sách ===
-  const searchInput = document.getElementById('search-input');
-  searchInput.addEventListener('input', () => {
+// === Tìm kiếm bạn bè + nhóm ===
+const searchInput = document.getElementById('search-input');
+searchInput.addEventListener('input', () => {
   const keyword = searchInput.value.toLowerCase().trim();
+
+  // Lọc danh sách bạn bè
   document.querySelectorAll('#user-suggestions .friend-item').forEach(item => {
     const name = item.querySelector('.friend-name').textContent.toLowerCase();
-    if (name.includes(keyword)) {
-      item.style.display = '';
-    } else {
-      item.style.display = 'none';
-    }
+    item.style.display = name.includes(keyword) ? '' : 'none';
   });
+
+  // Lọc danh sách nhóm
+  document.querySelectorAll('#group-list .group-item').forEach(item => {
+    const name = item.querySelector('.group-name').textContent.toLowerCase();
+    item.style.display = name.includes(keyword) ? '' : 'none';
   });
+});
+
   // hàm block 
   // Gọi cập nhật ngay
   await updateBlockButton();
@@ -447,7 +485,74 @@ document.addEventListener('DOMContentLoaded', async () => {
   
   imgOverlay.addEventListener('mouseleave', hideOverlay);
   imgOverlay.addEventListener('click', hideOverlay);
-  
+  // thông báo 
+  // Map lưu số lượng tin nhắn chưa đọc theo userId
+const unreadCounts = new Map();
+function updateUnreadBadge(userId) {
+  const item = document.querySelector(`#user-suggestions .msg-btn[data-id="${userId}"]`)?.closest('.friend-item');
+  if (!item) return;
+
+  let badge = item.querySelector('.badge-unread');
+  const count = unreadCounts.get(userId) || 0;
+
+  if (!badge) {
+    badge = document.createElement('span');
+    badge.className = 'badge-unread';
+    item.appendChild(badge); // append trực tiếp vào thẻ cha
+  }
+
+  badge.textContent = count > 9 ? '9+' : count;
+  badge.style.display = count === 0 ? 'none' : 'inline-block';
+}
+
+function showToastNotification(msg, sender) {
+  const container = document.getElementById('chat-notification-container');
+  const toast = document.createElement('div');
+  toast.className = 'toast-notification';
+
+  toast.innerHTML = `
+    <img src="${sender.avatar || 'default-avatar.png'}" alt="${sender.username}">
+    <div><strong>${sender.username}</strong><br>${msg.content || '📎 File'}</div>
+  `;
+
+  container.appendChild(toast);
+
+  // Animate vào
+  setTimeout(() => toast.classList.add('show'), 10);
+
+  // 3 giây sau ẩn
+  setTimeout(() => {
+    toast.classList.remove('show');
+    setTimeout(() => toast.remove(), 500);
+  }, 3000);
+}
+// Khi mở chat với 1 user, reset badge
+function resetUnread(userId) {
+  unreadCounts.set(userId, 0);
+  updateUnreadBadge(userId);
+}
+
+// Bấm nhắn tin → reset badge
+document.getElementById('user-suggestions').addEventListener('click', (e) => {
+  if (e.target.classList.contains('msg-btn')) {
+    const id = e.target.dataset.id;
+    resetUnread(id);
+  }
+});
+
+async function loadUnreadCounts() {
+  try {
+    const res = await authFetch('/api/messages/unread/counts');
+    if (!res.ok) return;
+    const data = await res.json(); // { "2": 3, "5": 1 }
+    Object.entries(data).forEach(([userId, count]) => {
+      unreadCounts.set(userId, count);
+      updateUnreadBadge(userId);
+    });
+  } catch (err) {
+    console.error('Lỗi load số tin nhắn chưa đọc:', err);
+  }
+}
 
   
 

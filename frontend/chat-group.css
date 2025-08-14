@@ -245,3 +245,107 @@
     opacity: 0.85;
   }
   
+  .message {
+    margin: 5px;
+    padding: 8px 12px;
+    border-radius: 10px;
+    max-width: 60%;
+  }
+  
+  .message.me {
+    background: #daf1da;
+    align-self: flex-end;
+  }
+  
+  .message.other {
+    background: #f1f0f0;
+    align-self: flex-start;
+  }
+  
+  .sender-info {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  
+  .sender-info .avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+  }
+  
+/* Avatar trong tin nhắn nhóm */
+.message.other {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.message.other .avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.message.other .msg-content {
+  display: flex;
+  flex-direction: column;
+  max-width: calc(100% - 40px);
+}
+
+.message.other .username {
+  font-size: 12px;
+  color: #555;
+  margin-bottom: 2px;
+}
+
+.message.other .text {
+  background: inherit; /* giữ màu nền đã set từ .message.other */
+  padding: 0;
+}
+
+/* Đảm bảo tin của mình không bị lệch do float */
+.message.mine {
+  clear: both;
+}
+
+/* Hàng chứa avatar + bong bóng, để tận dụng bubble .message sẵn có */
+/* Hàng tin nhắn dạng flex để canh trái/phải rõ ràng */
+.msg-row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+  margin: 6px 0;
+}
+
+/* Hàng của mình đẩy về bên phải */
+.msg-row.mine {
+  justify-content: flex-end;
+}
+
+/* Khi nằm trong msg-row, bỏ float để không xung đột với flex */
+.msg-row .message {
+  float: none !important;
+}
+
+.group-header {
+  display: flex;
+  flex-direction: column; /* Xuống dòng */
+  align-items: flex-start;
+}
+
+.group-members-count {
+  font-size: 13px;
+  color: gray;
+  margin-top: 2px;
+}
+
+.system-message {
+  text-align: center;
+  font-style: italic;
+  color: gray;
+  margin: 8px 0;
+  font-size: 0.9em;
+}
