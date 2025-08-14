@@ -37,6 +37,7 @@ exports.createGroup = async (req, res) => {
     cleanMembers.forEach(uid => {
       io.to(`user_${uid}`).emit('group:new', group);
     });
+    io.to(`group_${group.id}`).emit('group:membersUpdated', { groupId: group.id });
 
     // Trả luôn object group cho người tạo
     res.json(group);
@@ -73,28 +74,35 @@ exports.getMyGroups = async (req, res) => {
 
 exports.leaveGroup = async (req, res) => {
   try {
+    const io = req.app.get('io');
     const userId = req.user.id;
     const { groupId } = req.params;
 
-    // Lấy tên user để hiển thị trong thông báo
+    // Lấy tên user
     const userRes = await db.query(
       'SELECT username FROM users WHERE id = $1',
       [userId]
     );
     const username = userRes.rows[0]?.username || 'Người dùng';
 
-    // Xóa thành viên khỏi nhóm
+    // Xóa thành viên
     await db.query(
       'DELETE FROM group_members WHERE group_id = $1 AND user_id = $2',
       [groupId, userId]
     );
 
-    // Emit tin nhắn hệ thống cho các thành viên nhóm
-    const io = req.app.get('io');
+    // Bắn event cho người rời nhóm → xóa nhóm khỏi danh sách
+    io.to(`user_${userId}`).emit('group:removed', { groupId: Number(groupId) });
+
+    // Bắn event cho các thành viên còn lại → cập nhật số lượng
+    io.to(`group_${groupId}`).emit('group:membersUpdated', { groupId: Number(groupId) });
+
+    // Bắn tin nhắn hệ thống
     const systemMessage = {
       group_id: Number(groupId),
       type: 'system',
-      content: `${username} đã rời nhóm`,
+      username,
+      action: 'đã rời nhóm',
       created_at: new Date()
     };
     io.to(`group_${groupId}`).emit('group:system_message', systemMessage);
@@ -105,6 +113,7 @@ exports.leaveGroup = async (req, res) => {
     res.status(500).json({ message: 'Lỗi server' });
   }
 };
+
 
 
 // Lấy tin nhắn nhóm
@@ -191,6 +200,40 @@ exports.sendGroupMessage = async (req, res) => {
     res.json(payload);
   } catch (err) {
     console.error('Lỗi gửi tin nhắn nhóm:', err);
+    res.status(500).json({ message: 'Lỗi server' });
+  }
+};
+
+
+// số lượng thành vin
+// Lấy danh sách thành viên nhóm
+exports.getGroupMembers = async (req, res) => {
+  try {
+    const { groupId } = req.params;
+    const userId = req.user.id;
+
+    // Kiểm tra user có trong nhóm không
+    const check = await db.query(
+      'SELECT 1 FROM group_members WHERE group_id = $1 AND user_id = $2',
+      [groupId, userId]
+    );
+    if (check.rowCount === 0) {
+      return res.status(403).json({ message: 'Bạn không thuộc nhóm này' });
+    }
+
+    // Lấy danh sách
+    const members = await db.query(
+      `SELECT u.id, u.username, u.avatar
+       FROM group_members gm
+       JOIN users u ON gm.user_id = u.id
+       WHERE gm.group_id = $1
+       ORDER BY u.username ASC`,
+      [groupId]
+    );
+
+    res.json(members.rows);
+  } catch (err) {
+    console.error('Lỗi lấy thành viên nhóm:', err);
     res.status(500).json({ message: 'Lỗi server' });
   }
 };

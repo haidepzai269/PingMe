@@ -344,8 +344,98 @@
 
 .system-message {
   text-align: center;
-  font-style: italic;
-  color: gray;
-  margin: 8px 0;
   font-size: 0.9em;
+  margin: 8px 0;
+}
+
+.system-message .username {
+  color: #4ae2aa; /* Xanh nhạt kiểu Messenger */
+  font-weight: bold;
+}
+
+.system-message .action {
+  color: gray;
+  font-style: italic;
+}
+
+#group-members-popup {
+  display: none;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(255, 255, 255, 1); /* Nền trắng hơi trong suốt */
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+  z-index: 1000;
+  width: 380px; /* To hơn */
+  max-height: 75vh;
+  overflow-y: auto;
+  backdrop-filter: blur(6px); /* Làm mờ nền phía sau */
+  animation: popupFadeIn 0.3s ease;
+}
+
+#group-members-popup h3 {
+  margin-bottom: 15px;
+  font-size: 20px;
+  text-align: center;
+  color: #333;
+}
+
+#group-members-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+#group-members-list li {
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  background: rgba(240, 240, 240, 0.8);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  transition: background 0.2s ease;
+}
+
+#group-members-list li:hover {
+  background: rgba(220, 220, 220, 0.9);
+}
+
+#group-members-list img {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  margin-right: 10px;
+  object-fit: cover;
+}
+
+#close-members-popup {
+  display: block;
+  width: 100%;
+  padding: 10px;
+  background: linear-gradient(145deg, #a8edea, #fed6e3); /* đồng bộ pastel với chat.css */
+  border: none;
+  border-radius: 8px;
+  color: rgb(48, 45, 45);
+  font-size: 16px;
+  cursor: pointer;
+  margin-top: 10px;
+  transition: background 0.2s ease;
+}
+
+#close-members-popup:hover {
+  background: linear-gradient(145deg, #fed6e3, #a8edea);
+  transform: scale(1.05);}
+
+@keyframes popupFadeIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -45%);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
 }

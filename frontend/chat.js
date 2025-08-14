@@ -553,6 +553,14 @@ async function loadUnreadCounts() {
     console.error('Lỗi load số tin nhắn chưa đọc:', err);
   }
 }
+ // enter
+   // Gửi tin nhắn khi nhấn Enter
+   messageInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault(); // Ngăn xuống dòng
+      sendBtn.click(); // Giả lập click nút gửi
+    }
+  });
 
   
 
