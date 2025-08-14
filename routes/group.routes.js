@@ -11,5 +11,6 @@ router.get('/:groupId/messages', authMiddleware, groupController.getGroupMessage
 
 // NEW: gửi tin nhắn nhóm (lưu DB + emit)
 router.post('/:groupId/messages', authMiddleware, groupController.sendGroupMessage);
+router.get('/:groupId/members', authMiddleware, groupController.getGroupMembers);
 
 module.exports = router;

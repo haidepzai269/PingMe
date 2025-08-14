@@ -162,15 +162,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     currentGroupName = groupName;
   
     const memberLabel = membersCount != null 
-      ? `<div class="group-members-count">${Number(membersCount)} thành viên</div>` 
+      ? `<div class="group-members-count" style="cursor:pointer;color:#28A745;font-size:14px">${Number(membersCount)} thành viên</div>` 
       : '';
   
     chatHeader.innerHTML = `
       <div class="group-header">
-        <strong>${groupName}</strong>
+        <strong style="font-size:30px;">${groupName}</strong>
         ${memberLabel}
       </div>
     `;
+  
+    // Gắn sự kiện click xem danh sách thành viên
+    const memberCountEl = chatHeader.querySelector('.group-members-count');
+    if (memberCountEl) {
+      memberCountEl.addEventListener('click', () => openMembersPopup(groupId));
+    }
   
     chatMessages.innerHTML = '';
   
@@ -180,6 +186,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     socket.emit('join:group', { groupId });
     await loadGroupMessages(groupId);
   }
+  
   
   
   
@@ -260,10 +267,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   socket.on('group:system_message', (msg) => {
     const div = document.createElement('div');
     div.classList.add('system-message');
-    div.textContent = msg.content;
+    div.innerHTML = `<span class="username">${msg.username}</span> <span class="action">${msg.action}</span>`;
     chatMessages.appendChild(div);
     chatMessages.scrollTop = chatMessages.scrollHeight;
   });
+  
   
   async function loadGroups() {
     const res = await authFetch('/api/groups/my');
@@ -362,6 +370,55 @@ document.addEventListener('DOMContentLoaded', async () => {
       friendListContainer.appendChild(li);
     });
   }
+  // xem số lượng thành viên 
+  const membersPopup = document.getElementById('group-members-popup');
+  const membersListEl = document.getElementById('group-members-list');
+  const closeMembersPopup = document.getElementById('close-members-popup');
+
+  async function openMembersPopup(groupId) {
+  try {
+    const res = await authFetch(`/api/groups/${groupId}/members`);
+    const members = await res.json();
+    membersListEl.innerHTML = '';
+    members.forEach(m => {
+      const li = document.createElement('li');
+      li.style.display = 'flex';
+      li.style.alignItems = 'center';
+      li.style.marginBottom = '5px';
+      li.innerHTML = `
+        <img src="${m.avatar || '/images/default-avatar.png'}" style="width:24px;height:24px;border-radius:50%;margin-right:8px;">
+        <span>${m.username}</span>
+      `;
+      membersListEl.appendChild(li);
+    });
+    membersPopup.style.display = 'block';
+  } catch (err) {
+    console.error('Lỗi lấy thành viên nhóm:', err);
+  }
+  }
+
+  closeMembersPopup.addEventListener('click', () => {
+    membersPopup.style.display = 'none';
+  });
+  socket.on('group:membersUpdated', async ({ groupId }) => {
+    if (membersPopup.style.display === 'block' && groupId === currentGroupId) {
+      await openMembersPopup(groupId);
+    }
+  });
+  socket.on('group:removed', ({ groupId }) => {
+    groups = groups.filter(g => Number(g.id) !== Number(groupId));
+    renderGroups();
+  
+    // Nếu đang mở nhóm vừa rời
+    if (Number(currentGroupId) === Number(groupId)) {
+      currentGroupId = null;
+      currentGroupName = null;
+      chatHeader.innerHTML = '';
+      chatMessages.innerHTML = '';
+    }
+  });
+  
+  
   
 
   await loadGroups();
