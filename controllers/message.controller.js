@@ -262,3 +262,155 @@ exports.markAllAsSeen = async (req, res) => {
     res.status(500).json({ message: 'Lỗi khi đánh dấu tất cả tin nhắn đã xem' });
   }
 };
+
+
+// Xóa toàn bộ tin nhắn của mình trong một cuộc trò chuyện
+exports.deleteMyMessagesInConversation = async (req, res) => {
+  const me = req.user.id;
+  const { userId } = req.params;
+
+  try {
+    // Lấy tất cả tin nhắn của mình trong cuộc trò chuyện
+    const { rows: myMessages } = await pool.query(
+      `SELECT * FROM messages
+       WHERE sender_id = $1 
+       AND (receiver_id = $2 OR (receiver_id = $1 AND sender_id = $2))`,
+      [me, userId]
+    );
+
+    if (myMessages.length === 0) {
+      return res.json({ success: true, deletedCount: 0 });
+    }
+
+    // Xóa media trên Cloudinary nếu có
+    for (const msg of myMessages) {
+      if (msg.media_url) {
+        try {
+          const publicId = msg.media_url.split('/').pop().split('.')[0];
+          await cloudinary.uploader.destroy(publicId, {
+            resource_type: msg.media_type === 'video' ? 'video' : 'image'
+          });
+        } catch (err) {
+          console.warn(`Không thể xóa file Cloudinary của tin nhắn ${msg.id}:`, err.message);
+        }
+      }
+    }
+
+    // Xóa DB
+    await pool.query(
+      `DELETE FROM messages
+       WHERE sender_id = $1 
+       AND (receiver_id = $2 OR (receiver_id = $1 AND sender_id = $2))`,
+      [me, userId]
+    );
+
+    // Gửi realtime cho chính mình và người nhận 
+    // Sau khi DELETE xong DB:
+    req.io.to(`user_${me}`).emit('conversation:my_messages_deleted', { userId: me });
+    req.io.to(`user_${userId}`).emit('conversation:my_messages_deleted', { userId: me });
+    res.json({ success: true, deletedCount: myMessages.length });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Lỗi khi xóa tin nhắn của bạn trong cuộc trò chuyện' });
+  }
+};
+
+
+
+// thay nền
+// thay nền (ghi 2 chiều + realtime hai bên)
+exports.updateChatBackground = async (req, res) => {
+  const me = req.user.id;
+  const { partnerId } = req.params;
+  let { background_url } = req.body;
+
+  if (!partnerId) {
+    return res.status(400).json({ message: 'Thiếu partnerId' });
+  }
+
+  // Nếu không có URL hoặc là chuỗi rỗng → set NULL (xóa nền)
+  if (!background_url || background_url.trim() === '') {
+    background_url = null;
+  }
+
+  try {
+    await pool.query(
+      `
+      INSERT INTO chat_backgrounds (user_id, partner_id, background_url)
+      VALUES ($1, $2, $3), ($2, $1, $3)
+      ON CONFLICT (user_id, partner_id)
+      DO UPDATE SET background_url = EXCLUDED.background_url
+      `,
+      [me, partnerId, background_url]
+    );
+
+    // Emit realtime cho cả hai
+    req.io.to(`user_${me}`).emit('chat:background_updated', {
+      partnerId: Number(partnerId),
+      background_url
+    });
+    req.io.to(`user_${partnerId}`).emit('chat:background_updated', {
+      partnerId: Number(me),
+      background_url
+    });
+
+    res.json({ success: true, background_url });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Lỗi khi cập nhật nền chat' });
+  }
+};
+
+
+
+exports.getChatBackground = async (req, res) => {
+  const me = req.user.id;
+  const { partnerId } = req.params;
+
+  try {
+    // Ưu tiên bản ghi chiều (me -> partnerId)
+    let { rows } = await pool.query(
+      `SELECT background_url FROM chat_backgrounds WHERE user_id = $1 AND partner_id = $2`,
+      [me, partnerId]
+    );
+
+    // Fallback: nếu không có, thử chiều ngược (dữ liệu cũ)
+    if (!rows[0]) {
+      const rev = await pool.query(
+        `SELECT background_url FROM chat_backgrounds WHERE user_id = $1 AND partner_id = $2`,
+        [partnerId, me]
+      );
+      rows = rev.rows;
+    }
+
+    res.json({ background_url: rows[0]?.background_url || null });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Lỗi khi lấy nền chat' });
+  }
+};
+
+
+// Trong message.controller.js
+
+exports.uploadChatBackground = [
+  exports.multerUpload, // dùng exports.multerUpload đã khai báo ở trên
+  async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: 'Không có file nào được upload' });
+      }
+
+      const result = await cloudinary.uploader.upload(req.file.path, {
+        resource_type: 'image'
+      });
+
+      fs.unlinkSync(req.file.path); // Xóa file tạm
+
+      res.json({ url: result.secure_url });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ message: 'Lỗi upload ảnh nền' });
+    }
+  }
+];

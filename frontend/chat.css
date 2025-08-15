@@ -33,12 +33,14 @@
   
   .nav-btn {
     width: 60px;
-    height: 40px;
-    margin: 10px 0;
+    height: 60px;
+    margin: 12px 0;
     cursor: pointer;
-    border: none;
-    background: linear-gradient(145deg, #ffffffaa, #ffffff55); /* trắng trong mờ */
-    color: #555;
+    border: 1px solid rgba(255,255,255,0.3); /* viền mờ */
+    background: rgba(255,255,255,0.1); /* nền trong suốt mờ */
+    backdrop-filter: blur(4px); /* mờ nền phía sau */
+    color: #282626;
+    font-size: 22px;
     font-weight: bold;
     border-radius: 12px;
     transition: all 0.3s ease;
@@ -47,12 +49,13 @@
   
   /* Hover: pastel nhẹ + phóng to */
   .nav-btn:hover {
-    background: linear-gradient(145deg, #a8edea, #fed6e3); /* xanh mint → hồng pastel */
-    color: #333;
-    transform: scale(1.08);
-    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+    background: rgba(255,255,255,0.2);
+    box-shadow: 0 4px 12px rgba(255,255,255,0.25); /* ánh sáng nhẹ */
+    transform: scale(1.05);
   }
-  
+  .nav-btn:hover i {
+    text-shadow: 0 0 10px #fff, 0 0 20px #4facfe, 0 0 30px #00ddff;
+  }
   
   
   .chat-list {
@@ -959,23 +962,349 @@
   line-height: 1;
 }
 
-
 .date-divider {
   text-align: center;
   margin: 10px 0;
-  color: #888;
-  font-size: 12px;
-  position: relative;
+  color: gray;
+  font-weight: 100;
+  font-style: italic;
+  font-size: 14px;
 }
-.date-divider::before,
-.date-divider::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  width: 40%;
-  height: 1px;
-  background: #ccc;
-}
-.date-divider::before { left: 0; }
-.date-divider::after { right: 0; }
 
+.sidebar-avatar {
+  margin-top: auto; /* đẩy xuống cuối sidebar */
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid #fff;
+  cursor: pointer;
+}
+
+.sidebar-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+/* ==== Popup avatar & logout ==== */
+.popup {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.popup.show {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.popup-content {
+  background: white;
+  width : 240px;
+  padding: 20px;
+  border-radius: 12px;
+  text-align: center;
+  max-width: 300px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+}
+
+.popup-close {
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  font-size: 22px;
+  font-weight: bold;
+  color: #666;
+  cursor: pointer;
+}
+
+.popup-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-bottom: 10px;
+}
+
+.popup-username {
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 15px;
+}
+
+.popup-message-btn {
+  padding: 8px 16px;
+  background: linear-gradient(145deg, #a8edea, #fed6e3);
+  border: none;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: bold;
+  color: #333;
+  transition: all 0.25s ease;
+}
+
+.popup-message-btn:hover {
+  background: linear-gradient(145deg, #fed6e3, #a8edea);
+  transform: scale(1.05);
+}
+.pingme-username {
+  font-weight: bold;
+  font-size: 18px;
+  margin-bottom: 5px;
+  text-align: center;
+
+  /* Màu gradient */
+  background: linear-gradient(90deg, #ff8a00, #e52e71, #9b51e0, #00c6ff);
+  background-size: 300% 300%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: pingmeGradient 5s ease infinite;
+}
+
+@keyframes pingmeGradient {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+#delete-chat-btn{
+  padding: 6px 10px;
+  background: linear-gradient(145deg, #a8edea, #fed6e3);
+  border: none;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: bold;
+  color: #333;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.25s ease;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+#delete-chat-btn:hover{
+  background: linear-gradient(145deg, #fed6e3, #a8edea);
+  transform: scale(1.05);
+}
+
+.more-options-btn {
+  background: none;
+  border: none;
+  font-size: 22px;
+  cursor: pointer;
+  padding: 5px;
+}
+
+@property --angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+.more-options-popup {
+  position: absolute;
+  top: 40px;
+  right: 0;
+  background: transparent;
+  border-radius: 6px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+  display: none;
+  flex-direction: column;
+  padding: 10px;
+  gap: 10px;
+  animation: fadeIn 0.2s ease;
+  z-index: 1000;
+  min-width: 140px;
+  overflow: hidden;
+}
+
+.more-options-popup::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  padding: 2px; /* độ dày viền */
+  border-radius: inherit;
+
+  background: conic-gradient(
+    from var(--angle),
+    #f6d365,
+    #fda085,
+    #fbc2eb,
+    #a1c4fd,
+    #c2e9fb,
+    #d4fc79,
+    #f6d365
+  );
+
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+
+  animation: rotateColors 4s linear infinite;
+
+  pointer-events: none; /* Quan trọng: để click xuyên qua */
+}
+
+@keyframes rotateColors {
+  to { --angle: 360deg; }
+}
+
+.more-options-popup button {
+  padding: 10px;
+  background: none;
+  border: none;
+  text-align: center;
+  cursor: pointer;
+}
+
+.more-options-popup button:hover {
+  background: #f5f5f5;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+
+/*emoji*/
+#emoji-btn {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: #666;
+}
+
+#emoji-picker {
+  position: absolute;
+  bottom: 60px; /* cách ô input 60px */
+  left: 100px;   /* sát bên trái của ô input */
+  background: transparent;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  padding: 10px;
+  display: none;
+  flex-wrap: wrap;
+  width: 260px;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 9999;
+}
+
+
+#emoji-picker span {
+  cursor: pointer;
+  font-size: 20px;
+  padding: 5px;
+  transition: background 0.2s;
+}
+
+#emoji-picker span:hover {
+  background: #f0f0f0;
+  border-radius: 6px;
+}
+.chat-input {
+  position: relative; /* để popup định vị theo input */
+}
+#emoji-picker {
+  position: absolute;
+  bottom: 100px; /* khoảng cách so với input */
+  left: 30%;      /* ngay trên nút emoji */
+}
+/* Thanh cuộn đẹp cho popup emoji */
+/* Thanh cuộn gradient xanh - hồng cho popup emoji */
+#emoji-picker::-webkit-scrollbar {
+  width: 6px;
+}
+
+#emoji-picker::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+#emoji-picker::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #4facfe, #ff6fd8); /* xanh → hồng */
+  border-radius: 3px;
+}
+
+#emoji-picker::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #3a8dde, #e85bb8); /* đậm hơn khi hover */
+}
+
+/* Hỗ trợ Firefox */
+#emoji-picker {
+  scrollbar-width: thin;
+  scrollbar-color: #4facfe transparent;
+}
+#emoji-btn {
+  background: none;
+  border: none;
+  font-size: 22px;
+  cursor: pointer;
+  color: #666;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#emoji-btn:hover {
+  color: #13daf0; /* hồng pastel khi hover */
+}
+.messages {
+  background-color: #f8f8f8; /* fallback khi chưa có ảnh */
+  background-size: cover;
+  background-position: center;
+  transition: background 0.3s ease;
+}
+
+
+#change-bg-btn{
+  padding: 6px 10px;
+  background: linear-gradient(145deg, #a8edea, #fed6e3);
+  border: none;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: bold;
+  color: #333;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.25s ease;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+
+#change-bg-btn:hover{
+  background: linear-gradient(145deg, #fed6e3, #a8edea);
+  transform: scale(1.05);
+}
+
+#remove-bg-btn{
+  padding: 6px 10px;
+  background: linear-gradient(145deg, #a8edea, #fed6e3);
+  border: none;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: bold;
+  color: #333;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.25s ease;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+#remover-bg-btn:hover{
+  background: linear-gradient(145deg, #fed6e3, #a8edea);
+  transform: scale(1.05);
+}

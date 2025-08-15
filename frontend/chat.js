@@ -21,8 +21,47 @@ document.addEventListener('DOMContentLoaded', async () => {
     <span>${user.username}</span>
     <div id="user-status-text" class="offline">🔴 Không hoạt động</div>
   </div>
-  <button id="block-btn" style="margin-left: auto; display : none">Loading...</button>
-  `;
+  <div class="header-actions" style="margin-left:auto; position:relative;">
+    <button id="more-options-btn" class="more-options-btn">⋯</button>
+    <div id="more-options-popup" class="more-options-popup">
+      <button id="block-btn">Loading...</button>
+      <button id="delete-chat-btn">Xóa tin nhắn</button>
+      <button id="change-bg-btn">Đổi nền chat</button>
+      <button id="remove-bg-btn">Xóa nền chat</button>
+      <input type="file" id="bg-upload" accept="image/*" style="display:none">
+    </div>
+
+  </div>
+`;
+//
+// Sau khi set chatHeader.innerHTML
+const moreBtn = document.getElementById('more-options-btn');
+const morePopup = document.getElementById('more-options-popup');
+
+// Toggle popup khi bấm 3 chấm
+moreBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  morePopup.style.display = morePopup.style.display === 'flex' ? 'none' : 'flex';
+});
+
+// Ẩn popup khi bấm ra ngoài
+document.addEventListener('click', () => {
+  morePopup.style.display = 'none';
+});
+
+// Nút chặn (gọi lại logic cũ)
+document.getElementById('block-btn').addEventListener('click', () => {
+  // Logic chặn đã có sẵn trong code của bạn
+  morePopup.style.display = 'none';
+});
+
+// Nút xóa toàn bộ tin nhắn
+document.getElementById('delete-chat-btn').addEventListener('click', () => {
+  deleteMyMessagesInChat();
+  morePopup.style.display = 'none';
+});
+
+
 
 
   const avatarEl = document.getElementById('chat-avatar');
@@ -91,22 +130,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   let lastMessageDate = null; // lưu ngày của tin nhắn trước đó
 
   function addMessageToUI(msg) {
-    const msgDate = new Date(msg.created_at); // backend trả created_at
-    const msgDateStr = msgDate.toLocaleDateString(); // dạng dd/mm/yyyy
+    const msgDateStr = new Date(msg.created_at).toLocaleDateString(); // dạng dd/mm/yyyy
   
-    // Nếu ngày khác lastMessageDate → chèn dòng thời gian
-    if (lastMessageDate !== msgDateStr) {
-      const dateDivider = document.createElement('div');
-      dateDivider.classList.add('date-divider');
-      dateDivider.textContent = `--- ${msgDateStr} ---`;
-      messageList.appendChild(dateDivider);
-      lastMessageDate = msgDateStr;
-    }
-  
+    // Tạo phần tử tin nhắn
     const msgDiv = document.createElement('div');
     msgDiv.classList.add('message');
-    msgDiv.dataset.id = msg.id; // lưu id tin nhắn
-  
+    msgDiv.dataset.id = msg.id;
+    msgDiv.dataset.senderId = String(msg.sender_id);
     if (msg.sender_id == me.id) {
       msgDiv.classList.add('mine');
     } else {
@@ -177,9 +207,27 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
     }
   
+    // Kiểm tra xem đã có divider cho ngày này chưa
+    let divider = document.querySelector(`.date-divider[data-date="${msgDateStr}"]`);
+    if (divider) {
+      // Nếu đã có, di chuyển nó xuống ngay trước tin nhắn mới
+      messageList.appendChild(divider);
+    } else {
+      // Nếu chưa có, tạo mới
+      divider = document.createElement('div');
+      divider.classList.add('date-divider');
+      divider.dataset.date = msgDateStr;
+      divider.textContent = `--- ${msgDateStr} ---`;
+      messageList.appendChild(divider);
+    }
+  
+    // Thêm tin nhắn ngay sau divider
     messageList.appendChild(msgDiv);
+  
+    // Cuộn xuống cuối
     messageList.scrollTop = messageList.scrollHeight;
   }
+  
   
   const uploadBtn = document.getElementById('uploadBtn');
   uploadBtn.addEventListener('click', () => {
@@ -424,6 +472,39 @@ searchInput.addEventListener('input', () => {
       }
     }
   });
+  // xóa toàn bộ tin nhắn 
+  // Function xóa tin nhắn của mình
+  async function deleteMyMessagesInChat() {
+  if (confirm('Bạn có chắc muốn xóa tất cả tin nhắn của mình trong cuộc trò chuyện này không?')) {
+    try {
+      const res = await authFetch(`/api/messages/conversation/${chatWithUserId}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) {
+        document.querySelectorAll('#chat-messages .message.mine').forEach(el => el.remove());
+        alert(`Đã xóa ${data.deletedCount} tin nhắn của bạn`);
+      } else {
+        alert(data.message || 'Không thể xóa tin nhắn');
+      }
+    } catch (err) {
+      console.error('Lỗi khi xóa trò chuyện:', err);
+    }
+  }
+  }
+  // Lắng nghe realtime khi server báo đã xóa tin nhắn của mình
+  // Xóa toàn bộ tin nhắn của 1 người (deleter)
+  socket.on('conversation:my_messages_deleted', ({ userId: deleterId }) => {
+  // Chỉ xử lý khi deleter là mình hoặc là người đang chat
+  const inThisChat =
+    String(deleterId) === String(me.id) ||
+    String(deleterId) === String(chatWithUserId);
+
+  if (!inThisChat) return;
+
+  document
+    .querySelectorAll(`#chat-messages .message[data-sender-id="${String(deleterId)}"]`)
+    .forEach(el => el.remove());
+  });
+
 
   // Tạo overlay + ảnh phóng to, ẩn mặc định
   const imgOverlay = document.createElement('div');
@@ -572,8 +653,229 @@ async function loadUnreadCounts() {
       sendBtn.click(); // Giả lập click nút gửi
     }
   });
+   // Load profile
+   // Load profile và set tên vào thanh tìm kiếm
+   async function loadProfileSidebar() {
+  const res = await authFetch('/api/users/me');
+  if (!res) return console.error('Không lấy được profile');
+  const data = await res.json();
+
+  // Avatar sidebar + popup
+  document.getElementById('sidebar-avatar-img').src = data.avatar || 'default-avatar.png';
+  document.getElementById('logout-popup-img').src = data.avatar || 'default-avatar.png';
+  document.getElementById('logout-popup-username').textContent = data.username;
+
+  // Set PingMe - username vào input tìm kiếm
+// Set PingMe - username ở trên thanh tìm kiếm
+const pingmeLabel = document.getElementById('pingme-username');
+if (pingmeLabel) {
+  pingmeLabel.textContent = `PingMe - ${data.username}`;
+}
+
+   }
 
   
+  // Mở popup khi click avatar
+  document.getElementById('sidebar-avatar').addEventListener('click', () => {
+    document.getElementById('logout-popup').classList.add('show');
+  });
+  
+  // Xử lý logout
+  document.getElementById('logout-btn').addEventListener('click', () => {
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    sessionStorage.clear();
+    window.location.href = 'auth.html';
+  });
+  // ĐÓNG POPUP KHI CLICK RA NGOÀI (kể cả click overlay)
+const popup = document.getElementById('logout-popup');
+const popupContent = popup.querySelector('.popup-content');
+const avatar = document.getElementById('sidebar-avatar');
+
+// Click avatar để mở (nhớ chặn bubble để không bị đóng ngay)
+avatar.addEventListener('click', (e) => {
+  e.stopPropagation();
+  popup.classList.add('show');
+});
+
+// Click bất kỳ chỗ nào: nếu không nằm trong popup-content và không phải avatar → đóng
+document.addEventListener('click', (e) => {
+  if (!popup.classList.contains('show')) return;
+  const clickTrongContent = popupContent.contains(e.target);
+  const clickVaoAvatar = avatar.contains(e.target);
+  if (!clickTrongContent && !clickVaoAvatar) {
+    popup.classList.remove('show');
+  }
+});
+
+// Click đúng overlay (vùng tối) cũng đóng
+popup.addEventListener('click', (e) => {
+  if (e.target === popup) {
+    popup.classList.remove('show');
+  }
+});
+
+// Nhấn phím Esc để đóng
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    popup.classList.remove('show');
+  }
+});
+  loadProfileSidebar();
+  
+  // Emoji
+  // Emoji Picker
+const emojiBtn = document.getElementById('emoji-btn');
+const emojiPicker = document.getElementById('emoji-picker');
+const emojis = [
+  // Mặt cảm xúc
+  "😀","😁","😂","🤣","😃","😄","😅","😆","😉","😊","😇","🙂","🙃","😋","😌","😍","😘","😗","😙","😚",
+  "😜","🤪","🤩","😎","🥰","😏","😒","😞","😔","😟","😕","🙁","☹️","😣","😖","😫","😩","🥺","😭","😤",
+  "😠","😡","🤬","🤯","😳","🥵","🥶","😱","😨","😰","😥","😓","🤗","🤔","🤭","🤫","🤥","😶","😐","😑",
+  // Tay & hành động
+  "👍","👎","👌","✌️","🤞","🤟","🤘","🤙","👋","🤚","🖐️","✋","🖖","👊","🤛","🤜","👏","🙌","👐","🤲",
+  // Trái tim & tình cảm
+  "❤️","🧡","💛","💚","💙","💜","🖤","🤍","🤎","💔","❣️","💕","💞","💓","💗","💖","💘","💝",
+  // Vật dụng & kỷ niệm
+  "🎉","🥳","🎂","🍰","🍕","🍔","🍟","🍩","☕","🍵","🍺","🍷","🍹","🍸","🏆","⚽","🏀","🎮","🎵","🎶","💡","🔥","💯","✅","❌","🌟","⭐","✨","🌈"
+];
+
+function loadEmojis() {
+  emojiPicker.innerHTML = '';
+  emojis.forEach(e => {
+    const span = document.createElement('span');
+    span.textContent = e;
+    span.addEventListener('click', () => {
+      messageInput.value += e;
+      emojiPicker.style.display = 'none';
+      messageInput.focus();
+    });
+    emojiPicker.appendChild(span);
+  });
+}
+
+emojiBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  emojiPicker.style.display = (emojiPicker.style.display === 'flex') ? 'none' : 'flex';
+});
+
+document.addEventListener('click', () => {
+  emojiPicker.style.display = 'none';
+});
+
+loadEmojis();
+  // đổi nền
+  // ==========================
+// ===== ĐỔI NỀN CHAT (dán thay block cũ) =====
+const changeBgBtn = document.getElementById("change-bg-btn");
+const bgUploadInput = document.getElementById("bg-upload");
+const messagesEl = document.querySelector(".messages");
+
+// Dùng ID người đang chat cùng — đảm bảo không còn null
+const partnerId = chatWithUserId;
+
+function setChatBackground(url) {
+  if (!messagesEl) return;
+  messagesEl.style.backgroundImage = `url(${url})`;
+  messagesEl.style.backgroundSize = "cover";
+  messagesEl.style.backgroundPosition = "center";
+}
+
+async function loadChatBackground() {
+  if (!partnerId) return;
+  try {
+    const res = await authFetch(`/api/messages/background/${partnerId}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    if (data.background_url) setChatBackground(data.background_url);
+    else messagesEl.style.backgroundImage = "";
+  } catch (err) {
+    console.error("Lỗi load nền chat:", err);
+  }
+}
+
+if (changeBgBtn) {
+  changeBgBtn.addEventListener("click", () => {
+    if (bgUploadInput) bgUploadInput.click();
+  });
+}
+
+if (bgUploadInput) {
+  bgUploadInput.addEventListener("change", async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      // 1) Upload ảnh
+      const uploadRes = await authFetch("/api/messages/background/upload", {
+        method: "POST",
+        body: formData
+      });
+      if (!uploadRes.ok) throw new Error(`Upload failed: ${uploadRes.status}`);
+      const uploadData = await uploadRes.json();
+      if (!uploadData.url) return alert("Lỗi upload ảnh nền");
+
+      // 2) Lưu DB (ghi 2 chiều ở backend)
+      const saveRes = await authFetch(`/api/messages/background/${partnerId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ background_url: uploadData.url })
+      });
+      if (!saveRes.ok) throw new Error(`Save failed: ${saveRes.status}`);
+
+      // 3) Cập nhật UI ngay
+      setChatBackground(uploadData.url);
+    } catch (err) {
+      console.error("Lỗi đổi nền:", err);
+      alert("Không thể đổi nền chat");
+    } finally {
+      e.target.value = ""; // reset input
+    }
+  });
+}
+
+
+const removeBgBtn = document.getElementById("remove-bg-btn");
+
+if (removeBgBtn) {
+  removeBgBtn.addEventListener("click", async () => {
+    if (!partnerId) return;
+    try {
+      const res = await authFetch(`/api/messages/background/${partnerId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ background_url: null })
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+      // Reset nền về mặc định
+      messagesEl.style.backgroundImage = "";
+    } catch (err) {
+      console.error("Lỗi xóa nền:", err);
+    }
+  });
+}
+// Realtime: nhận sự kiện cho cả hai bên
+if (typeof socket !== "undefined") {
+  socket.on("chat:background_updated", (data) => {
+    // backend đã gửi partnerId = "người còn lại" đối với người nhận event
+    if (String(data.partnerId) === String(partnerId)) {
+      if (data.background_url) {
+        setChatBackground(data.background_url);
+      } else {
+        messagesEl.style.backgroundImage = "";
+      }
+    }
+  });
+}
+// Load nền khi mở chat
+loadChatBackground();
+
+
+
 
   // Gọi luôn khi load trang
   loadFriends();
