@@ -402,6 +402,8 @@ async function loadProfile() {
   if (!res) return console.error('Không lấy được profile');
   const data = await res.json();
   me = data;
+
+  // Avatar trong profile section
   document.getElementById('profile-avatar').innerHTML =
     `<img src="${data.avatar || 'default-avatar.png'}" alt="avatar">`;
   document.getElementById('profile-username').textContent = data.username;
@@ -409,7 +411,26 @@ async function loadProfile() {
   document.getElementById('profile-friends-count').textContent = `Bạn bè: ${data.friends_count}`;
   document.getElementById('edit-username').value = data.username;
   document.getElementById('edit-bio').value = data.bio || '';
+
+  // Avatar sidebar & popup logout
+  document.getElementById('sidebar-avatar-img').src = data.avatar || 'default-avatar.png';
+  document.getElementById('logout-popup-img').src = data.avatar || 'default-avatar.png';
+  document.getElementById('logout-popup-username').textContent = data.username;
 }
+
+// Mở popup khi click avatar sidebar
+document.getElementById('sidebar-avatar').addEventListener('click', () => {
+  document.getElementById('logout-popup').classList.add('show');
+});
+
+// Xử lý logout
+document.getElementById('logout-btn').addEventListener('click', () => {
+  localStorage.removeItem('accessToken');
+  localStorage.removeItem('refreshToken');
+  sessionStorage.clear();
+  window.location.href = 'auth.html';
+});
+
 
 async function loadUserSuggestions() {
     const res = await authFetch('/api/users');

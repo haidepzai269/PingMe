@@ -11,5 +11,9 @@ router.get('/recent', auth, messageController.getRecentChats);
 router.delete('/:messageId', auth, messageController.deleteMessage); 
 router.get('/unread/counts', auth, messageController.getUnreadCounts); 
 router.put('/:userId/seen_all', auth, messageController.markAllAsSeen);
+router.delete('/conversation/:userId', auth, messageController.deleteMyMessagesInConversation);
+router.put('/background/:partnerId', auth, messageController.updateChatBackground);
+router.get('/background/:partnerId', auth, messageController.getChatBackground);
+router.post('/background/upload', auth, messageController.uploadChatBackground);
 
 module.exports = router;
