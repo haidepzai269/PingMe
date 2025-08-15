@@ -958,3 +958,24 @@
   text-align: center;
   line-height: 1;
 }
+
+
+.date-divider {
+  text-align: center;
+  margin: 10px 0;
+  color: #888;
+  font-size: 12px;
+  position: relative;
+}
+.date-divider::before,
+.date-divider::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 40%;
+  height: 1px;
+  background: #ccc;
+}
+.date-divider::before { left: 0; }
+.date-divider::after { right: 0; }
+

@@ -427,7 +427,8 @@
 
 #close-members-popup:hover {
   background: linear-gradient(145deg, #fed6e3, #a8edea);
-  transform: scale(1.05);}
+  transform: scale(1.05);
+}
 
 @keyframes popupFadeIn {
   from {
@@ -438,4 +439,104 @@
     opacity: 1;
     transform: translate(-50%, -50%);
   }
+}
+
+/* Overlay */
+#profile-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1099;
+}
+
+/* Popup */
+#profile-popup {
+  display: none;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #fff;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  z-index: 1100;
+  width: 300px;
+  text-align: center;
+  font-family: sans-serif;
+}
+
+/* Avatar */
+#profile-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  margin-bottom: 10px;
+  border: 2px solid #2eee9e;
+}
+
+/* Tên user */
+#profile-username {
+  margin: 5px 0;
+  font-size: 20px;
+  font-family: Verdana, Geneva, Tahoma, sans-serif;
+  font-weight: bold;
+  color: #232323;
+}
+
+/* Bio */
+#profile-bio {
+  border: 2px solid #2eee9e ;
+  border-top: none;
+  background: linear-gradient(180deg, #fff8f0, #fef4ea, #ffffff);
+  border-left: none ;
+  border-right: none ;
+  border-radius: 12px;
+  color: #666;
+  font-size: 14px;
+  font-style: italic;
+  padding: 15px;
+  
+}
+
+/* Số bạn bè */
+#profile-friends-count {
+  font-size: 16px;
+  
+}
+
+/* Nút chính */
+#profile-action-btn {
+  background: linear-gradient(145deg, #a8edea, #fed6e3); /* đồng bộ pastel với chat.css */
+  border: none;
+  padding: 8px 15px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  color: rgb(0, 0, 0);
+  cursor: pointer;
+  margin-top: 10px;
+}
+
+#profile-action-btn:hover {
+  background: linear-gradient(145deg, #fed6e3, #a8edea);
+  transform: scale(1.05);}
+
+/* Nút đóng */
+#close-profile-popup {
+  background: linear-gradient(145deg, #a8edea, #fed6e3); /* đồng bộ pastel với chat.css */
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  margin-top: 12px;
+  cursor: pointer;
+}
+
+#close-profile-popup:hover {
+  background: linear-gradient(145deg, #fed6e3, #a8edea);
 }

@@ -54,3 +54,13 @@ document.getElementById('auth-btn').addEventListener('click', async () => {
     messageEl.textContent = 'Lỗi kết nối server';
   }
 });
+
+// Bắt phím Enter trong ô username và password
+['username', 'password'].forEach(id => {
+  document.getElementById(id).addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault(); // chặn hành vi submit mặc định của form
+      document.getElementById('auth-btn').click(); // gọi lại hành động login/register
+    }
+  });
+});
