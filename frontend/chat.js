@@ -88,23 +88,39 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
   
 
+  let lastMessageDate = null; // lưu ngày của tin nhắn trước đó
+
   function addMessageToUI(msg) {
+    const msgDate = new Date(msg.created_at); // backend trả created_at
+    const msgDateStr = msgDate.toLocaleDateString(); // dạng dd/mm/yyyy
+  
+    // Nếu ngày khác lastMessageDate → chèn dòng thời gian
+    if (lastMessageDate !== msgDateStr) {
+      const dateDivider = document.createElement('div');
+      dateDivider.classList.add('date-divider');
+      dateDivider.textContent = `--- ${msgDateStr} ---`;
+      messageList.appendChild(dateDivider);
+      lastMessageDate = msgDateStr;
+    }
+  
     const msgDiv = document.createElement('div');
     msgDiv.classList.add('message');
     msgDiv.dataset.id = msg.id; // lưu id tin nhắn
-
+  
     if (msg.sender_id == me.id) {
       msgDiv.classList.add('mine');
     } else {
       msgDiv.classList.add('other');
     }
-
+  
+    // Nội dung text
     if (msg.content) {
       const text = document.createElement('p');
       text.textContent = msg.content;
       msgDiv.appendChild(text);
     }
-
+  
+    // Nội dung media
     if (msg.media_url) {
       if (msg.media_type === 'image') {
         const img = document.createElement('img');
@@ -119,57 +135,52 @@ document.addEventListener('DOMContentLoaded', async () => {
         msgDiv.appendChild(video);
       }
     }
-
-    // Thêm chỗ hiển thị trạng thái
+  
+    // Thêm trạng thái tin nhắn
     const statusEl = document.createElement('div');
     statusEl.classList.add('msg-status');
     statusEl.textContent = msg.seen_at ? '✓ Đã xem' : '✓ Đã gửi';
     statusEl.style.display = 'none';
     msgDiv.appendChild(statusEl);
-
-    // Chỉ cho phép chuột phải vào tin nhắn của mình
+  
+    // Nếu là tin nhắn của mình → cho phép xóa & xem trạng thái
     if (msg.sender_id == me.id) {
-      // Click chuột trái để xóa
+      // Click để xóa
       msgDiv.addEventListener('click', async (e) => {
-    e.preventDefault();
-    if (confirm('Bạn có chắc muốn xóa tin nhắn này không?')) {
-      try {
-        const res = await authFetch(`/api/messages/${msg.id}`, { method: 'DELETE' });
-        const data = await res.json();
-        if (data.success) {
-          msgDiv.remove();
-        } else {
-          alert(data.message || 'Không thể xóa tin nhắn');
+        e.preventDefault();
+        if (confirm('Bạn có chắc muốn xóa tin nhắn này không?')) {
+          try {
+            const res = await authFetch(`/api/messages/${msg.id}`, { method: 'DELETE' });
+            const data = await res.json();
+            if (data.success) {
+              msgDiv.remove();
+            } else {
+              alert(data.message || 'Không thể xóa tin nhắn');
+            }
+          } catch (err) {
+            console.error('Lỗi xóa tin nhắn:', err);
+          }
         }
-      } catch (err) {
-        console.error('Lỗi xóa tin nhắn:', err);
-      }
-    }
       });
-      // xem trạng thái tin nhắn 
+  
+      // Chuột phải → xem trạng thái
       msgDiv.addEventListener('contextmenu', async (e) => {
         e.preventDefault();
-
         try {
           const res = await authFetch(`/api/messages/${msg.id}/seen`, { method: 'PUT' });
           const data = await res.json();
-
-          if (data.seen_at) {
-            statusEl.textContent = '✓ Đã xem';
-          } else {
-            statusEl.textContent = '✓ Đã gửi';
-          }
+          statusEl.textContent = data.seen_at ? '✓ Đã xem' : '✓ Đã gửi';
         } catch (err) {
           console.error('Lỗi khi lấy trạng thái tin nhắn', err);
         }
-
         statusEl.style.display = statusEl.style.display === 'none' ? 'block' : 'none';
       });
     }
-
+  
     messageList.appendChild(msgDiv);
     messageList.scrollTop = messageList.scrollHeight;
   }
+  
   const uploadBtn = document.getElementById('uploadBtn');
   uploadBtn.addEventListener('click', () => {
     fileInput.click();

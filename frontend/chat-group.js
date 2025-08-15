@@ -286,7 +286,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       li.className = 'group-item';
       li.innerHTML = `
         <div class="group-name">${group.name}</div>
-        <button class="leave-group-btn" data-id="${group.id}">Rời nhóm</button>
+        <button class="leave-group-btn" data-id="${group.id}">rời nhóm</button>
       `;
       li.querySelector('.group-name').addEventListener('click', () => {
         openGroupChat(group.id, group.name, group.members_count);
@@ -389,8 +389,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         <img src="${m.avatar || '/images/default-avatar.png'}" style="width:24px;height:24px;border-radius:50%;margin-right:8px;">
         <span>${m.username}</span>
       `;
+      li.addEventListener('click', () => {
+        console.log('[DEBUG] member clicked:', m);
+        openProfilePopup(m.id || m.user_id || m.member_id);
+      });
       membersListEl.appendChild(li);
     });
+    
     membersPopup.style.display = 'block';
   } catch (err) {
     console.error('Lỗi lấy thành viên nhóm:', err);
@@ -417,7 +422,73 @@ document.addEventListener('DOMContentLoaded', async () => {
       chatMessages.innerHTML = '';
     }
   });
+  // Hàm hiện profile 
+  async function openProfilePopup(userId) {
+    try {
+      // Lấy thông tin profile
+      const resProfile = await authFetch(`/api/users/${userId}`);
+      if (!resProfile.ok) throw new Error('Không lấy được profile');
+      const profile = await resProfile.json();
   
+      // Gán thông tin
+      document.getElementById('profile-avatar').src = profile.avatar || '/images/default-avatar.png';
+      document.getElementById('profile-username').textContent = profile.username;
+      document.getElementById('profile-bio').textContent = profile.bio || '';
+      document.getElementById('profile-friends-count').textContent = `${profile.friends_count} bạn bè`;
+  
+      // Lấy trạng thái kết bạn
+      const resStatus = await authFetch(`/api/friends/status/${userId}`);
+      const { status } = await resStatus.json();
+  
+      const actionBtn = document.getElementById('profile-action-btn');
+      if (status === 'friends') {
+        actionBtn.textContent = 'Nhắn tin';
+        actionBtn.onclick = () => {
+          window.location.href = `chat.html?user=${userId}`;
+        };
+      } else if (status === 'none') {
+        actionBtn.textContent = 'Kết bạn';
+        actionBtn.onclick = async () => {
+          const res = await authFetch('/api/friends/request', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ receiverId: userId })
+          });
+          if (res.ok) {
+            alert('Đã gửi lời mời kết bạn');
+            socket.emit('friend:send_request', { senderId: myId, receiverId: userId });
+            document.getElementById('profile-popup').style.display = 'none';
+            document.getElementById('profile-overlay').style.display = 'none';
+          } else {
+            const err = await res.json();
+            alert(err.message || 'Không gửi được lời mời');
+          }
+        };
+      } else if (status === 'request-sent') {
+        actionBtn.textContent = 'Đã gửi lời mời';
+        actionBtn.disabled = true;
+      } else if (status === 'request-received') {
+        actionBtn.textContent = 'Đã gửi lời mời cho bạn';
+        actionBtn.disabled = true;
+      }
+  
+      // Mở popup
+      document.getElementById('profile-popup').style.display = 'block';
+      document.getElementById('profile-overlay').style.display = 'block';
+    } catch (err) {
+      console.error('Lỗi mở profile:', err);
+    }
+  }
+  
+  // Đóng popup
+  document.getElementById('close-profile-popup').onclick = () => {
+    document.getElementById('profile-popup').style.display = 'none';
+    document.getElementById('profile-overlay').style.display = 'none';
+  };
+  document.getElementById('profile-overlay').onclick = () => {
+    document.getElementById('profile-popup').style.display = 'none';
+    document.getElementById('profile-overlay').style.display = 'none';
+  };
   
   
 
