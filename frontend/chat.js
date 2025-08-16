@@ -121,21 +121,130 @@ document.getElementById('delete-chat-btn').addEventListener('click', () => {
     }
   });
   
-  async function loadMessages() {
-    const res = await authFetch(`/api/messages/${chatWithUserId}`);
-    const messages = await res.json();
+  // async function loadMessages() {
+  //   const res = await authFetch(`/api/messages/${chatWithUserId}`);
+  //   const messages = await res.json();
   
-    document.querySelectorAll('.skeleton-message').forEach(el => el.remove());
+  //   document.querySelectorAll('.skeleton-message').forEach(el => el.remove());
   
-    messages.forEach(addMessageToUI);
+  //   messages.forEach(addMessageToUI);
   
-    // Reset badge ngay khi load tin nhắn (frontend)
-    resetUnread(chatWithUserId);
+  //   // Reset badge ngay khi load tin nhắn (frontend)
+  //   resetUnread(chatWithUserId);
   
-    // Đánh dấu tất cả tin nhắn từ người chat là đã xem (backend)
-    await authFetch(`/api/messages/${chatWithUserId}/seen_all`, { method: 'PUT' });
+  //   // Đánh dấu tất cả tin nhắn từ người chat là đã xem (backend)
+  //   await authFetch(`/api/messages/${chatWithUserId}/seen_all`, { method: 'PUT' });
+  // }
+  // // load lịch sử cuộc gọi 
+  // async function loadCalls() {
+  //   const res = await authFetch(`/api/calls?userId=${me.id}&chatWithUserId=${chatWithUserId}`);
+  //   const data = await res.json();
+  //   if (data.success) {
+  //     data.calls.forEach(addCallToUI);
+  //   }
+  // }
+
+  
+  //test
+  async function loadConversation() {
+    try {
+      const [msgRes, callRes] = await Promise.all([
+        authFetch(`/api/messages/${chatWithUserId}`),
+        authFetch(`/api/calls?userId=${me.id}&chatWithUserId=${chatWithUserId}`)
+      ]);
+  
+      const messages = await msgRes.json();
+      const callsData = await callRes.json();
+      const calls = callsData.success ? callsData.calls : [];
+  
+      // Chuẩn hoá dữ liệu
+      const msgItems = messages.map(m => ({
+        type: 'message',
+        createdAt: new Date(m.created_at),
+        data: m
+      }));
+  
+      const callItems = calls.map(c => ({
+        type: 'call',
+        createdAt: new Date(c.started_at),
+        data: c
+      }));
+  
+      // Merge + sort theo thời gian
+      const allItems = [...msgItems, ...callItems];
+      allItems.sort((a, b) => a.createdAt - b.createdAt);
+  
+      // Clear khung chat
+      const chatBox = document.getElementById('chat-messages');
+      chatBox.innerHTML = '';
+  
+      // Render theo timeline
+      allItems.forEach(item => {
+        if (item.type === 'message') {
+          addMessageToUI(item.data);
+        } else {
+          addCallToUI(item.data);
+        }
+      });
+  
+      // Reset badge + mark seen
+      resetUnread(chatWithUserId);
+      await authFetch(`/api/messages/${chatWithUserId}/seen_all`, { method: 'PUT' });
+  
+    } catch (err) {
+      console.error('loadConversation error:', err);
+    }
   }
   
+  function addCallToUI(call) {
+    // Nếu đã có log này trong UI rồi thì không render nữa
+    if (document.getElementById(`call-${call.id}`)) {
+      return;
+    }
+  
+    const msgDiv = document.createElement('div');
+    msgDiv.classList.add('message');
+    msgDiv.id = `call-${call.id}`; // gắn id duy nhất
+    msgDiv.classList.add('call-log');
+    if (call.status === 'ended') {
+      msgDiv.classList.add('success');
+    } else if (call.status === 'missed' || call.status === 'rejected') {
+      msgDiv.classList.add('failed');
+    }
+    if (call.caller_id == me.id) {
+      msgDiv.classList.add('mine');
+    } else {
+      msgDiv.classList.add('other');
+    }
+  
+    let content = '';
+    if (call.status === 'rejected') {
+      content = `<i class="fa-solid fa-phone-slash" style="color:red"></i> 
+                 Cuộc gọi bị từ chối (${new Date(call.started_at).toLocaleTimeString()})`;
+    } else if (call.status === 'ended') {
+      const minutes = call.duration ? Math.floor(call.duration / 60) : 0;
+      const seconds = call.duration ? call.duration % 60 : 0;
+      content = `<i class="fa-solid fa-phone" style="color:green"></i> 
+                 Đã gọi ${minutes} phút ${seconds} giây (${new Date(call.started_at).toLocaleTimeString()})`;
+    } else if (call.status === 'missed') {
+      content = `<i class="fa-solid fa-phone-missed" style="color:red"></i> 
+                 Cuộc gọi nhỡ (${new Date(call.started_at).toLocaleTimeString()})`;
+    } else {
+      // fallback: hiển thị status lạ để dễ debug
+      content = `<i class="fa-solid fa-phone" style="color:gray"></i> 
+                 Cuộc gọi (${call.status}) - ${new Date(call.started_at).toLocaleTimeString()}`;
+    }        
+    msgDiv.innerHTML = content;
+    document.getElementById('chat-messages').appendChild(msgDiv);
+  }
+  
+  socket.on('call:rejected', (call) => {
+    addCallToUI(call);
+  });
+  socket.on('call:ended', (call) => {
+    addCallToUI(call);
+  });
+    
 
   let lastMessageDate = null; // lưu ngày của tin nhắn trước đó
 
@@ -884,6 +993,28 @@ if (typeof socket !== "undefined") {
 }
 // Load nền khi mở chat
 loadChatBackground();
+// cuộn 
+// ====== SCROLL TO BOTTOM ======
+const scrollBtn = document.getElementById('scrollToBottomBtn');
+const chatMessages = document.getElementById('chat-messages');
+
+// Hàm cuộn xuống cuối
+function scrollToBottom() {
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+// Bấm nút thì cuộn xuống
+if (scrollBtn) {
+  scrollBtn.addEventListener('click', scrollToBottom);
+}
+
+// Hiện/ẩn nút khi user kéo lên
+if (chatMessages) {
+  chatMessages.addEventListener('scroll', () => {
+    const isAtBottom = chatMessages.scrollHeight - chatMessages.scrollTop <= chatMessages.clientHeight + 50;
+    scrollBtn.style.display = isAtBottom ? 'none' : 'block';
+  });
+}
 
 
 // ==== Voice call ====
@@ -1208,5 +1339,8 @@ function showToast(message, type = "info") {
 
   // Gọi luôn khi load trang
   loadFriends();
-  loadMessages();
+  // loadMessages();
+  // loadCalls();
+  loadConversation();
+
 });

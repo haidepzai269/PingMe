@@ -152,22 +152,48 @@ function socketHandler(io) {
     });
     
     socket.on('call:reject', async ({ callId }) => {
-      const { rows } = await pool.query(`UPDATE calls SET status='rejected', ended_at=NOW() WHERE id=$1 RETURNING *`, [callId]);
+      const { rows } = await pool.query(
+        `UPDATE calls SET status='rejected', ended_at=NOW() WHERE id=$1 RETURNING *`, [callId]
+      );
       const call = rows[0];
-      io.to(`user_${call.caller_id}`).emit('call:rejected', { callId });
+    
+      // gửi đủ thông tin cho cả 2 phía
+      io.to(`user_${call.caller_id}`).emit('call:rejected', call);
+      io.to(`user_${call.callee_id}`).emit('call:rejected', call);
     });
     
     socket.on('call:end', async ({ callId }) => {
-      const { rows } = await pool.query(
-        `UPDATE calls SET status='ended', ended_at=NOW(), 
-          duration=EXTRACT(EPOCH FROM (NOW() - answered_at))::int 
-         WHERE id=$1 RETURNING *`, 
-        [callId]
-      );
+      const { rows } = await pool.query(`SELECT * FROM calls WHERE id=$1`, [callId]);
       const call = rows[0];
-      io.to(`user_${call.caller_id}`).emit('call:ended', { callId });
-      io.to(`user_${call.callee_id}`).emit('call:ended', { callId });
+      let updated;
+    
+      if (!call.answered_at) {
+        // chưa từng nhấc máy => missed
+        const res = await pool.query(
+          `UPDATE calls 
+           SET status='missed', ended_at=NOW(), duration=NULL 
+           WHERE id=$1 RETURNING *`,
+          [callId]
+        );
+        updated = res.rows[0];
+      } else {
+        // đã nhấc máy => ended
+        const res = await pool.query(
+          `UPDATE calls 
+           SET status='ended', ended_at=NOW(),
+               duration=EXTRACT(EPOCH FROM (NOW() - answered_at))::int
+           WHERE id=$1 RETURNING *`,
+          [callId]
+        );
+        updated = res.rows[0];
+      }
+    
+      io.to(`user_${updated.caller_id}`).emit('call:ended', updated);
+      io.to(`user_${updated.callee_id}`).emit('call:ended', updated);
     });
+    
+    
+    
     
     // Relay ICE/SDP
     socket.on('rtc:offer', ({ rtcRoomId, sdp }) => {

@@ -1589,3 +1589,82 @@
   background: #6c757d;
   color: #ccc;
 }
+
+.message.call-log {
+  display: inline-flex;
+  align-items: center;
+  background: linear-gradient(135deg, #e0f7ef, #f0fff9);
+  border: 1px solid #b2f5ea;
+  border-radius: 18px;
+  padding: 8px 14px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #0d8050;
+  margin: 6px auto;   /* căn giữa trong khung chat */
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+}
+
+.message.call-log i {
+  margin-right: 8px;
+  font-size: 16px;
+  color: #0aa55c;
+}
+
+.message.call-log span {
+  white-space: nowrap;
+}
+.message.call-log {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 18px;
+  padding: 8px 14px;
+  font-size: 14px;
+  font-weight: 500;
+  margin: 6px auto;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+}
+
+/* Cuộc gọi thành công */
+.message.call-log.success {
+  background: linear-gradient(135deg, #e0f7ef, #f0fff9);
+  border: 1px solid #b2f5ea;
+  color: #0d8050;
+}
+.message.call-log.success i {
+  color: #0aa55c;
+}
+
+/* Cuộc gọi nhỡ / bị từ chối */
+.message.call-log.failed {
+  background: linear-gradient(135deg, #ffeaea, #fff5f5);
+  border: 1px solid #f5b2b2;
+  color: #a80000;
+}
+.message.call-log.failed i {
+  color: #d63333;
+}
+#scrollToBottomBtn {
+  position: absolute;         /* hoặc fixed nếu muốn bay theo màn hình */
+  bottom: 95px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.8);
+  color: #333;
+  border: 1px solid #ddd;
+  color: white;
+  font-size: 18px;
+  display: none;              /* mặc định ẩn */
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+  transition: all 0.2s ease;
+  z-index: 100;
+}
+
+#scrollToBottomBtn:hover {
+  background-color: rgba(0, 0, 0, 0.7);
+  transform: scale(1.1);
+}
+
