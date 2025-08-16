@@ -16,8 +16,9 @@ exports.getCalls = async (req, res) => {
        FROM calls c
        JOIN users u1 ON c.caller_id = u1.id
        JOIN users u2 ON c.callee_id = u2.id
-       WHERE (caller_id=$1 AND callee_id=$2) 
-          OR (caller_id=$2 AND callee_id=$1)
+       WHERE ((caller_id=$1 AND callee_id=$2) 
+           OR (caller_id=$2 AND callee_id=$1))
+         AND c.status != 'ringing'       -- 🔥 loại bỏ các log ringing thừa
        ORDER BY c.started_at ASC`,
       [userId, chatWithUserId]
     );

@@ -19,6 +19,8 @@ const friendRoutes = require('./routes/friend.routes');
 const searchRoutes = require('./routes/search.routes');
 const blockRoutes = require('./routes/block.routes');
 const groupRoutes = require('./routes/group.routes');
+const callRoutes = require('./routes/calls.routes');
+
 
 
 app.use('/api/auth', authRoutes);
@@ -27,6 +29,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/friends', friendRoutes);
 app.use('/api/search', searchRoutes);
 app.use('/api/block', blockRoutes);
+app.use('/api/calls', callRoutes);
 
 // Khi vào / => mở auth.html
 app.get('/', (req, res) => {

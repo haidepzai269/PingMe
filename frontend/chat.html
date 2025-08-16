@@ -69,7 +69,9 @@
         <div class="skeleton-message mine"></div>
         <div class="skeleton-message"></div>
       </div>
-      <div id="scrollToBottomBtn" class="scroll-to-bottom">👇</div>
+      <div id="scrollToBottomBtn" class="scroll-to-bottom">
+        <i class="fa-solid fa-angles-down"></i>
+      </div>
       <div id="typing-indicator" class="typing-indicator"></div>
       <div class="chat-input">
         <!-- Nút upload và input file ẩn -->
@@ -203,11 +205,15 @@ z-index:999;
     <!-- Thanh đo mic/remote -->
     <div id="meters" class="call-meters">
       <div>
-        <div style="color:#0f0;">🎤 Mic</div>
+        <div style="color:#0f0;">
+          <i class="fa-solid fa-microphone"></i> Mic
+        </div>
         <canvas id="local-meter" width="150" height="30"></canvas>
       </div>
       <div>
-        <div style="color:#0ff;">🔊 Remote</div>
+        <div style="color:#0ff;">
+          <i class="fa-solid fa-volume-high"></i> Remote
+        </div>
         <canvas id="remote-meter" width="150" height="30"></canvas>
       </div>
     </div>
