@@ -1,6 +1,7 @@
 // backend/socket/index.js
 const jwt = require('jsonwebtoken');
-
+const { v4: uuidv4 } = require('uuid');
+const pool = require('../db'); 
 function socketHandler(io) {
   const onlineUsers = new Map(); // userId -> socketId
 
@@ -106,6 +107,93 @@ function socketHandler(io) {
         io.to(friendSock).emit('friend:unfriended', { by: userId, friendId });
       }
       socket.emit('friend:update_count', { userId });
+    });
+    // call video 
+    socket.on('call:init', async ({ calleeId }) => {
+      if (!socket.userId) return;
+      const rtcRoomId = `call_${uuidv4()}`;
+    
+      // insert call record
+      const { rows } = await pool.query(
+        `INSERT INTO calls (caller_id, callee_id, rtc_room_id, status) 
+         VALUES ($1,$2,$3,'ringing') RETURNING id`,
+        [socket.userId, calleeId, rtcRoomId]
+      );
+      const callId = rows[0].id;
+    
+      // Lấy thông tin caller từ DB
+      const callerRes = await pool.query(
+        `SELECT id, username, avatar 
+         FROM users WHERE id=$1`,
+        [socket.userId]
+      );
+      const caller = callerRes.rows[0];
+    
+      // Gửi cho callee
+      io.to(`user_${calleeId}`).emit('call:ring', {
+        callId,
+        rtcRoomId,
+        from: {
+          id: caller.id,
+          username: caller.username,
+          avatar: caller.avatar
+        }
+      });
+    
+      // Gửi cho caller
+      socket.emit('call:created', { callId, rtcRoomId });
+    });
+    
+    
+    socket.on('call:accept', async ({ callId }) => {
+      const { rows } = await pool.query(`UPDATE calls SET status='accepted', answered_at=NOW() WHERE id=$1 RETURNING *`, [callId]);
+      const call = rows[0];
+      io.to(`user_${call.caller_id}`).emit('call:accepted', { callId, rtcRoomId: call.rtc_room_id });
+    });
+    
+    socket.on('call:reject', async ({ callId }) => {
+      const { rows } = await pool.query(`UPDATE calls SET status='rejected', ended_at=NOW() WHERE id=$1 RETURNING *`, [callId]);
+      const call = rows[0];
+      io.to(`user_${call.caller_id}`).emit('call:rejected', { callId });
+    });
+    
+    socket.on('call:end', async ({ callId }) => {
+      const { rows } = await pool.query(
+        `UPDATE calls SET status='ended', ended_at=NOW(), 
+          duration=EXTRACT(EPOCH FROM (NOW() - answered_at))::int 
+         WHERE id=$1 RETURNING *`, 
+        [callId]
+      );
+      const call = rows[0];
+      io.to(`user_${call.caller_id}`).emit('call:ended', { callId });
+      io.to(`user_${call.callee_id}`).emit('call:ended', { callId });
+    });
+    
+    // Relay ICE/SDP
+    socket.on('rtc:offer', ({ rtcRoomId, sdp }) => {
+      console.log('[SIGNAL] Offer relayed to room', rtcRoomId);
+      socket.to(rtcRoomId).emit('rtc:offer', { rtcRoomId, sdp, from: socket.userId });
+    });
+    
+    socket.on('rtc:answer', ({ rtcRoomId, sdp }) => {
+      console.log('[SIGNAL] Answer relayed to room', rtcRoomId);
+      socket.to(rtcRoomId).emit('rtc:answer', { rtcRoomId, sdp, from: socket.userId });
+    });
+    
+    socket.on('rtc:candidate', ({ rtcRoomId, candidate }) => {
+      console.log('[SIGNAL] Candidate relayed to room', rtcRoomId);
+      socket.to(rtcRoomId).emit('rtc:candidate', { rtcRoomId, candidate, from: socket.userId });
+    });
+    
+    // --- JOIN RTC ROOM (important) ---
+    socket.on('join:rtc', ({ rtcRoomId }) => {
+  if (!rtcRoomId) return;
+  try {
+    socket.join(rtcRoomId);
+    console.log(`Socket ${socket.id} joined rtc room ${rtcRoomId} (user ${socket.userId})`);
+  } catch (err) {
+    console.error('join:rtc error', err);
+  }
     });
 
     // Disconnect

@@ -81,7 +81,9 @@
       
         <!-- Ô nhập tin nhắn và nút gửi -->
         <input type="text" id="message-input" placeholder="Nhập tin nhắn..." />
-        <button id="send-btn">Gửi</button>
+        <button id="send-btn" title="Gửi">
+          <i class="fa-solid fa-location-arrow"></i>
+        </button>
       </div>      
     </main>
   </div>
@@ -186,6 +188,46 @@ z-index:999;
   background:rgba(0,0,0,0.5);
   z-index:1099;
 "></div>
+<!-- Voice Call Modal -->
+<div id="call-modal">
+  <div class="call-box">
+    <!-- Thông tin người gọi/người nhận -->
+    <div class="call-user">
+      <img id="call-avatar" src="default-avatar.png" alt="avatar">
+      <h3 id="call-username">Tên người dùng</h3>
+    </div>
+
+    <!-- Trạng thái -->
+    <h2 id="call-status">Đang gọi...</h2>
+
+    <!-- Thanh đo mic/remote -->
+    <div id="meters" class="call-meters">
+      <div>
+        <div style="color:#0f0;">🎤 Mic</div>
+        <canvas id="local-meter" width="150" height="30"></canvas>
+      </div>
+      <div>
+        <div style="color:#0ff;">🔊 Remote</div>
+        <canvas id="remote-meter" width="150" height="30"></canvas>
+      </div>
+    </div>
+
+    <audio id="remote-audio" autoplay playsinline></audio>
+
+    <!-- Nút điều khiển -->
+    <div class="call-actions">
+      <button id="accept-call-btn"><i class="fa-solid fa-phone"></i></button>
+      <button id="reject-call-btn"><i class="fa-solid fa-phone-slash"></i></button>
+      <button id="end-call-btn"><i class="fa-solid fa-circle-xmark"></i></button>
+      <button id="toggle-mic-btn"><i class="fa-solid fa-microphone"></i></button>
+      <button id="toggle-speaker-btn"><i class="fa-solid fa-volume-high"></i></button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+
 
   <script type="module" src="chat-group.js"></script>
   <script type="module"  src="chat.js"></script>

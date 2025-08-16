@@ -24,6 +24,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   <div class="header-actions" style="margin-left:auto; position:relative;">
     <button id="more-options-btn" class="more-options-btn">⋯</button>
     <div id="more-options-popup" class="more-options-popup">
+      <button id="call-btn">📞 Gọi</button>
       <button id="block-btn">Loading...</button>
       <button id="delete-chat-btn">Xóa tin nhắn</button>
       <button id="change-bg-btn">Đổi nền chat</button>
@@ -110,7 +111,16 @@ document.getElementById('delete-chat-btn').addEventListener('click', () => {
   const fileInput = document.getElementById('fileInput');
   const messageInput = document.getElementById('message-input');
   const sendBtn = document.getElementById('send-btn');
+  const chatInputBox = document.querySelector('.chat-input');
 
+  messageInput.addEventListener('input', () => {
+    if (messageInput.value.trim() !== "") {
+      chatInputBox.classList.add('typing');
+    } else {
+      chatInputBox.classList.remove('typing');
+    }
+  });
+  
   async function loadMessages() {
     const res = await authFetch(`/api/messages/${chatWithUserId}`);
     const messages = await res.json();
@@ -257,6 +267,7 @@ document.getElementById('delete-chat-btn').addEventListener('click', () => {
       addMessageToUI(message);
       messageInput.value = '';
       fileInput.value = '';
+      chatInputBox.classList.remove('typing');
     } catch (error) {
       console.error('Lỗi gửi tin nhắn:', error);
       alert('Lỗi khi gửi tin nhắn');
@@ -873,6 +884,324 @@ if (typeof socket !== "undefined") {
 }
 // Load nền khi mở chat
 loadChatBackground();
+
+
+// ==== Voice call ====
+let localStream;
+let peerConnection;
+let currentCallId, currentRoomId;
+// ==== Audio meter setup ====
+let localAudioCtx, localAnalyser;
+let remoteAudioCtx, remoteAnalyser;
+
+function startMeter(stream, type) {
+  const audioCtx = new AudioContext();
+  const analyser = audioCtx.createAnalyser();
+  analyser.fftSize = 256;
+
+  const source = audioCtx.createMediaStreamSource(stream);
+  source.connect(analyser);
+
+  const bufferLength = analyser.frequencyBinCount;
+  const dataArray = new Uint8Array(bufferLength);
+
+  const canvas = document.getElementById(type === "local" ? "local-meter" : "remote-meter");
+  const ctx = canvas.getContext("2d");
+
+  function draw() {
+    requestAnimationFrame(draw);
+    analyser.getByteFrequencyData(dataArray);
+    const avg = dataArray.reduce((a,b)=>a+b,0) / dataArray.length;
+    const level = avg / 255; // 0–1
+
+    ctx.fillStyle = "#222";
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+
+    ctx.fillStyle = type === "local" ? "#0f0" : "#0ff";
+    ctx.fillRect(0,0,canvas.width*level,canvas.height);
+  }
+  draw();
+
+  if (type === "local") {
+    localAudioCtx = audioCtx;
+    localAnalyser = analyser;
+  } else {
+    remoteAudioCtx = audioCtx;
+    remoteAnalyser = analyser;
+  }
+}
+
+const callModal = document.getElementById('call-modal');
+const callStatus = document.getElementById('call-status');
+const acceptBtn = document.getElementById('accept-call-btn');
+const rejectBtn = document.getElementById('reject-call-btn');
+const endBtn = document.getElementById('end-call-btn');
+const remoteAudio = document.getElementById('remote-audio');
+const toggleMicBtn = document.getElementById('toggle-mic-btn');
+let micMuted = false;
+const toggleSpeakerBtn = document.getElementById('toggle-speaker-btn');
+let speakerMuted = false;
+// Nút gọi thử
+const callBtn = document.getElementById('call-btn');
+callBtn.addEventListener('click', () => {
+  console.log("☎️ Caller click Gọi, emit call:init");
+  socket.emit('call:init', { calleeId: chatWithUserId });
+  showCallUI('caller', { username: user.username, avatar: user.avatar });
+  morePopup.style.display = 'none'; // đóng popup sau khi bấm
+});
+// tắt mic
+toggleMicBtn.onclick = () => {
+  if (!localStream) return;
+
+  micMuted = !micMuted;
+  localStream.getAudioTracks().forEach(track => track.enabled = !micMuted);
+
+  if (micMuted) {
+    toggleMicBtn.classList.add("muted");
+    toggleMicBtn.innerHTML = '<i class="fa-solid fa-microphone-slash"></i>';
+    showToast("Mic đã tắt", "info");
+  } else {
+    toggleMicBtn.classList.remove("muted");
+    toggleMicBtn.innerHTML = '<i class="fa-solid fa-microphone"></i>';
+    showToast("Mic đã bật", "info");
+  }
+};
+// tắt loa 
+toggleSpeakerBtn.onclick = () => {
+  if (!remoteAudio) return;
+
+  speakerMuted = !speakerMuted;
+  remoteAudio.muted = speakerMuted;
+
+  if (speakerMuted) {
+    toggleSpeakerBtn.classList.add("muted");
+    toggleSpeakerBtn.innerHTML = '<i class="fa-solid fa-volume-xmark"></i>';
+    showToast("Loa đã tắt", "info");
+  } else {
+    toggleSpeakerBtn.classList.remove("muted");
+    toggleSpeakerBtn.innerHTML = '<i class="fa-solid fa-volume-high"></i>';
+    showToast("Loa đã bật", "info");
+  }
+};
+
+
+// ====== UI helpers ======
+function showCallUI(role, userInfo = {}) {
+  callModal.style.display = 'flex';
+
+  // cập nhật avatar + tên
+  document.getElementById("call-username").textContent = userInfo.username || "Người dùng";
+  document.getElementById("call-avatar").src = userInfo.avatar || "default-avatar.png";
+
+  if (role === 'caller') {
+    acceptBtn.style.display = 'none';
+    rejectBtn.style.display = 'none';
+    endBtn.style.display = 'inline-block';
+    callStatus.textContent = 'Đang gọi...';
+  } else if (role === 'callee') {
+    acceptBtn.style.display = 'inline-block';
+    rejectBtn.style.display = 'inline-block';
+    endBtn.style.display = 'none';
+    callStatus.textContent = 'Có cuộc gọi đến...';
+  }
+}
+
+
+function switchToInCallUI() {
+  acceptBtn.style.display = 'none';
+  rejectBtn.style.display = 'none';
+  endBtn.style.display = 'inline-block';
+  document.getElementById("call-status").textContent = 'Đang trò chuyện';
+  // avatar + username giữ nguyên từ showCallUI()
+}
+
+
+// ====== Caller actions ======
+callBtn.addEventListener('click', () => {
+  console.log("☎️ Caller click Gọi, emit call:init");
+  socket.emit('call:init', { calleeId: chatWithUserId });
+  showCallUI('caller', { username: user.username, avatar: user.avatar });});
+
+// Server trả về callId + rtcRoomId cho caller
+socket.on('call:created', async ({ callId, rtcRoomId }) => {
+  currentCallId = callId;
+  currentRoomId = rtcRoomId;
+  console.log("📞 call:created", callId, rtcRoomId);
+
+  // Join RTC room trước khi tạo offer
+  socket.emit('join:rtc', { rtcRoomId: currentRoomId });
+  console.log('Joined rtc room (caller), initPeer as caller');
+
+  await initPeer(true, currentRoomId);
+});
+
+// ====== Callee actions ======
+socket.on('call:ring', ({ callId, rtcRoomId, from }) => {
+  console.log("📞 call:ring from", from, "room", rtcRoomId);
+  currentCallId = callId;
+  currentRoomId = rtcRoomId;
+  showCallUI('callee', { username: from.username, avatar: from.avatar });
+});
+
+acceptBtn.onclick = async () => {
+  try {
+    socket.emit('join:rtc', { rtcRoomId: currentRoomId });
+    console.log('✅ Callee joining rtc room, initPeer(false)');
+
+    await initPeer(false, currentRoomId);
+
+    socket.emit('call:accept', { callId: currentCallId });
+    switchToInCallUI();
+  } catch (err) {
+    console.error('❌ Error in accept flow', err);
+  }
+};
+
+rejectBtn.onclick = () => {
+  console.log("❌ Callee reject call", currentCallId);
+  socket.emit('call:reject', { callId: currentCallId });
+  callModal.style.display = 'none';
+};
+
+endBtn.onclick = () => {
+  console.log("☎️ End call", currentCallId);
+  if (currentCallId) socket.emit('call:end', { callId: currentCallId });
+  //cleanupCall();
+};
+
+// ====== State update ======
+socket.on('call:accepted', async () => {
+  console.log('📥 call:accepted received (caller should now send offer)');
+  switchToInCallUI();
+
+  // Caller tạo offer ở đây
+  if (peerConnection) {
+    try {
+      const offer = await peerConnection.createOffer();
+      await peerConnection.setLocalDescription(offer);
+      console.log("📤 Sending offer:", offer.type);
+      socket.emit("rtc:offer", { rtcRoomId: currentRoomId, sdp: offer });
+    } catch (err) {
+      console.error("❌ Error creating offer", err);
+    }
+  }
+});
+
+socket.on('call:rejected', () => {
+  console.log("📥 call:rejected");
+  showToast("người dùng đã từ chối cuộc gọi ", "success");
+  cleanupCall();
+});
+
+socket.on('call:ended', () => {
+  console.log("📥 call:ended");
+  showToast("Cuộc gọi đã kết thúc", "success");
+  cleanupCall();
+});
+
+// ===== WebRTC setup =====
+async function initPeer(isCaller, rtcRoomId) {
+  console.log("⚙️ initPeer", isCaller ? "caller" : "callee");
+
+  peerConnection = new RTCPeerConnection();
+
+  peerConnection.onicecandidate = (event) => {
+    if (event.candidate) {
+      console.log("📤 Sending ICE candidate:", event.candidate.candidate);
+      socket.emit("rtc:candidate", { rtcRoomId, candidate: event.candidate });
+    }
+  };
+
+  peerConnection.ontrack = (event) => {
+    console.log("📥 Remote track received:", event.streams[0]);
+    remoteAudio.srcObject = event.streams[0];
+    remoteAudio.play().catch(err => console.error("Remote audio play error:", err));
+    startMeter(event.streams[0], "remote");
+  };
+
+  // Lấy mic
+  try {
+    localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    startMeter(localStream, "local");
+    console.log("🎤 Got localStream tracks:", localStream.getTracks().map(t => t.kind));
+    localStream.getTracks().forEach(track => {
+      console.log("🔊 Adding local track:", track.kind, track.id);
+      peerConnection.addTrack(track, localStream);
+    });
+  } catch (err) {
+    console.error("❌ Error accessing microphone", err);
+  }
+}
+
+// ===== Handle offer/answer/candidate =====
+socket.on('rtc:offer', async ({ sdp }) => {
+  console.log('📥 rtc:offer received', sdp.type);
+  if (!peerConnection) {
+    console.warn('PeerConnection not ready — creating as callee');
+    await initPeer(false, currentRoomId);
+  }
+  await peerConnection.setRemoteDescription(new RTCSessionDescription(sdp));
+  const answer = await peerConnection.createAnswer();
+  await peerConnection.setLocalDescription(answer);
+  console.log('📤 Sending answer:', answer.type);
+  socket.emit('rtc:answer', { rtcRoomId: currentRoomId, sdp: answer });
+});
+
+socket.on('rtc:answer', async ({ sdp }) => {
+  console.log('📥 rtc:answer received', sdp.type);
+  if (!peerConnection) {
+    console.error('❌ No peerConnection when receiving answer');
+    return;
+  }
+  await peerConnection.setRemoteDescription(new RTCSessionDescription(sdp));
+});
+
+socket.on('rtc:candidate', async ({ candidate }) => {
+  console.log('📥 rtc:candidate received', candidate && candidate.candidate);
+  if (peerConnection) {
+    try {
+      await peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+    } catch (e) {
+      console.error('❌ Error adding ICE candidate', e);
+    }
+  } else {
+    console.warn('No peerConnection to add ICE candidate to');
+  }
+});
+
+function cleanupCall() {
+  console.log("🧹 cleanupCall");
+  callModal.style.display = 'none';
+  if (peerConnection) peerConnection.close();
+  peerConnection = null;
+
+  if (localStream) {
+    localStream.getTracks().forEach(t => t.stop());
+  }
+  localStream = null;
+
+  // ==== Dọn audio meter ====
+  if (localAudioCtx) { localAudioCtx.close(); localAudioCtx = null; }
+  if (remoteAudioCtx) { remoteAudioCtx.close(); remoteAudioCtx = null; }
+
+  currentCallId = null;
+  currentRoomId = null;
+}
+function showToast(message, type = "info") {
+  const container = document.getElementById("toast-container");
+  const toast = document.createElement("div");
+  toast.className = `toast ${type}`;
+  toast.textContent = message;
+
+  container.appendChild(toast);
+
+  // Tự remove sau 4 giây
+  setTimeout(() => {
+    toast.remove();
+  }, 4000);
+}
+
+
 
 
 
