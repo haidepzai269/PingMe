@@ -4,8 +4,11 @@ console.log('DATABASE_URL:', process.env.DATABASE_URL);
 const pool = require('./db');
 const { Client } = require('@elastic/elasticsearch');
 
-const client = new Client({ node: process.env.ELASTIC_URL || 'http://localhost:9200' });
+const ELASTIC_NODE = process.env.ELASTIC_URL || 'http://localhost:9200';
 
+const client = new Client({
+  node: ELASTIC_NODE,
+});
 const ES_INDEX = 'users_index';
 
 async function sync() {

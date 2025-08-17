@@ -109,40 +109,40 @@ function socketHandler(io) {
       socket.emit('friend:update_count', { userId });
     });
     // call video 
-    socket.on('call:init', async ({ calleeId }) => {
-      if (!socket.userId) return;
-      const rtcRoomId = `call_${uuidv4()}`;
+// socket/index.js
+socket.on('call:init', async ({ calleeId, type }) => {
+  if (!socket.userId) return;
+
+  // 🚀 encode type vào rtcRoomId
+  const rtcRoomId = `${type || 'voice'}-${uuidv4()}`;
+
+  const { rows } = await pool.query(
+    `INSERT INTO calls (caller_id, callee_id, rtc_room_id, status) 
+     VALUES ($1,$2,$3,'ringing') RETURNING id`,
+    [socket.userId, calleeId, rtcRoomId]
+  );
+  const callId = rows[0].id;
+
+  // Lấy thông tin caller
+  const callerRes = await pool.query(
+    `SELECT id, username, avatar FROM users WHERE id=$1`,
+    [socket.userId]
+  );
+  const caller = callerRes.rows[0];
+
+  // Gửi cho callee
+  io.to(`user_${calleeId}`).emit('call:ring', {
+    callId,
+    rtcRoomId,
+    from: caller,
+    type: type || 'voice'   // 👈 gửi kèm type
+  });
+
+  // Gửi cho caller
+  socket.emit('call:created', { callId, rtcRoomId, type: type || 'voice' });
+});
+
     
-      // insert call record
-      const { rows } = await pool.query(
-        `INSERT INTO calls (caller_id, callee_id, rtc_room_id, status) 
-         VALUES ($1,$2,$3,'ringing') RETURNING id`,
-        [socket.userId, calleeId, rtcRoomId]
-      );
-      const callId = rows[0].id;
-    
-      // Lấy thông tin caller từ DB
-      const callerRes = await pool.query(
-        `SELECT id, username, avatar 
-         FROM users WHERE id=$1`,
-        [socket.userId]
-      );
-      const caller = callerRes.rows[0];
-    
-      // Gửi cho callee
-      io.to(`user_${calleeId}`).emit('call:ring', {
-        callId,
-        rtcRoomId,
-        from: {
-          id: caller.id,
-          username: caller.username,
-          avatar: caller.avatar
-        }
-      });
-    
-      // Gửi cho caller
-      socket.emit('call:created', { callId, rtcRoomId });
-    });
     
     
     socket.on('call:accept', async ({ callId }) => {
@@ -151,13 +151,20 @@ function socketHandler(io) {
       io.to(`user_${call.caller_id}`).emit('call:accepted', { callId, rtcRoomId: call.rtc_room_id });
     });
     
+    function attachType(call) {
+      return {
+        ...call,
+        type: call.rtc_room_id?.startsWith('video-') ? 'video' : 'voice'
+      };
+    }
+    
     socket.on('call:reject', async ({ callId }) => {
       const { rows } = await pool.query(
         `UPDATE calls SET status='rejected', ended_at=NOW() WHERE id=$1 RETURNING *`, [callId]
       );
-      const call = rows[0];
+      let call = rows[0];
+      call = attachType(call);
     
-      // gửi đủ thông tin cho cả 2 phía
       io.to(`user_${call.caller_id}`).emit('call:rejected', call);
       io.to(`user_${call.callee_id}`).emit('call:rejected', call);
     });
@@ -168,7 +175,6 @@ function socketHandler(io) {
       let updated;
     
       if (!call.answered_at) {
-        // chưa từng nhấc máy => missed
         const res = await pool.query(
           `UPDATE calls 
            SET status='missed', ended_at=NOW(), duration=NULL 
@@ -177,7 +183,6 @@ function socketHandler(io) {
         );
         updated = res.rows[0];
       } else {
-        // đã nhấc máy => ended
         const res = await pool.query(
           `UPDATE calls 
            SET status='ended', ended_at=NOW(),
@@ -188,9 +193,12 @@ function socketHandler(io) {
         updated = res.rows[0];
       }
     
+      updated = attachType(updated);
+    
       io.to(`user_${updated.caller_id}`).emit('call:ended', updated);
       io.to(`user_${updated.callee_id}`).emit('call:ended', updated);
     });
+    
     
     
     
