@@ -18,12 +18,18 @@ exports.getCalls = async (req, res) => {
        JOIN users u2 ON c.callee_id = u2.id
        WHERE ((caller_id=$1 AND callee_id=$2) 
            OR (caller_id=$2 AND callee_id=$1))
-         AND c.status != 'ringing'       -- 🔥 loại bỏ các log ringing thừa
+         AND c.status != 'ringing'
        ORDER BY c.started_at ASC`,
       [userId, chatWithUserId]
     );
 
-    res.json({ success: true, calls: rows });
+    // 🚀 Gắn thêm type: nếu rtc_room_id bắt đầu bằng 'video-' thì coi là video, ngược lại voice
+    const calls = rows.map(c => ({
+      ...c,
+      type: c.rtc_room_id && c.rtc_room_id.startsWith('video-') ? 'video' : 'voice'
+    }));
+
+    res.json({ success: true, calls });
   } catch (err) {
     console.error('getCalls error:', err);
     res.status(500).json({ success: false, message: 'Server error' });

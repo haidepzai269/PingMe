@@ -21,8 +21,10 @@ const upload = multer({
 exports.multerUpload = upload.single('file');
 
 // Gửi tin nhắn
+// Gửi tin nhắn
+// Gửi tin nhắn
 exports.sendMessage = async (req, res) => {
-  const { receiver_id, content } = req.body;
+  const { receiver_id, content, reply_to } = req.body;
   const sender_id = req.user.id;
 
   let media_url = null;
@@ -30,31 +32,34 @@ exports.sendMessage = async (req, res) => {
 
   try {
     if (req.file) {
-      console.log('File nhận được:', req.file);
       const ext = path.extname(req.file.originalname).toLowerCase();
       media_type = ext.match(/\.(mp4|mov|avi|mkv)$/) ? 'video' : 'image';
 
       const result = await cloudinary.uploader.upload(req.file.path, {
         resource_type: media_type === 'video' ? 'video' : 'image'
       });
-      console.log('Kết quả upload Cloudinary:', result);
       media_url = result.secure_url;
-
-      // Xoá file tạm
       fs.unlinkSync(req.file.path);
     }
 
     const query = `
-    INSERT INTO messages (sender_id, receiver_id, content, media_url, media_type, unread)
-    VALUES ($1, $2, $3, $4, $5, true) RETURNING *;
-  `;
-  const values = [sender_id, receiver_id, content || null, media_url, media_type];
-  
-
+      INSERT INTO messages (sender_id, receiver_id, content, media_url, media_type, unread, reply_to)
+      VALUES ($1, $2, $3, $4, $5, true, $6)
+      RETURNING *;
+    `;
+    const values = [sender_id, receiver_id, content || null, media_url, media_type, reply_to || null];
     const { rows } = await pool.query(query, values);
     const message = rows[0];
 
-    // Emit socket
+    // ✅ Nếu có reply_to → lấy nội dung tin gốc
+    if (message.reply_to) {
+      const replyRes = await pool.query(
+        `SELECT id, content, media_url, media_type FROM messages WHERE id = $1`,
+        [message.reply_to]
+      );
+      message.reply_message = replyRes.rows[0] || null;
+    }
+
     req.io.to(`user_${receiver_id}`).emit('message:new', message);
 
     res.json(message);
@@ -64,9 +69,10 @@ exports.sendMessage = async (req, res) => {
   }
 };
 
+
 // Lấy lịch sử tin nhắn
 exports.getMessages = async (req, res) => {
-  const { userId } = req.params; // id người chat cùng
+  const { userId } = req.params;
   const me = req.user.id;
 
   try {
@@ -77,12 +83,25 @@ exports.getMessages = async (req, res) => {
       ORDER BY created_at ASC;
     `;
     const { rows } = await pool.query(query, [me, userId]);
+
+    // ✅ Lấy nội dung tin nhắn gốc nếu có reply
+    for (let msg of rows) {
+      if (msg.reply_to) {
+        const replyRes = await pool.query(
+          `SELECT id, content, media_url, media_type FROM messages WHERE id = $1`,
+          [msg.reply_to]
+        );
+        msg.reply_message = replyRes.rows[0] || null;
+      }
+    }
+
     res.json(rows);
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Lỗi khi lấy tin nhắn' });
   }
 };
+
 // Đánh dấu tin nhắn đã xem
 exports.markAsSeen = async (req, res) => {
     const { messageId } = req.params;

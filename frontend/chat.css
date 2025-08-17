@@ -1390,8 +1390,8 @@
   padding: 25px;
   border-radius: 16px;
   text-align: center;
-  width: 360px;
-  max-width: 90%;
+  width: 700px;        /* tăng chiều ngang */
+  max-width: 90%; 
   animation: scaleIn 0.3s ease;
   z-index: 1;
 
@@ -1650,9 +1650,8 @@
   height: 40px;
   border-radius: 50%;
   background-color: rgba(255, 255, 255, 0.8);
-  color: #333;
   border: 1px solid #ddd;
-  color: white;
+  color: rgb(233, 9, 9);
   font-size: 18px;
   display: none;              /* mặc định ẩn */
   justify-content: center;
@@ -1666,5 +1665,237 @@
 #scrollToBottomBtn:hover {
   background-color: rgba(0, 0, 0, 0.7);
   transform: scale(1.1);
+}
+
+
+
+
+
+.video-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  margin: 15px auto;
+  flex-wrap: wrap;   /* phòng trường hợp màn nhỏ thì nó tự xuống hàng */
+}
+
+#local-video,
+#remote-video {
+  flex: 1 1 45%;      /* mỗi video chiếm ~45% chiều ngang */
+  max-width: 320px;
+  height: 220px;
+  border-radius: 10px;
+  background: black;
+  object-fit: cover;
+}
+
+
+#uploadBtn {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: #555;
+  transition: color 0.2s ease;
+}
+
+#uploadBtn:hover {
+  color: #007bff; /* đổi màu khi hover */
+}
+
+#video-call-btn{
+  padding: 6px 10px;
+  background: linear-gradient(145deg, #a8edea, #fed6e3);
+  border: none;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: bold;
+  color: #333;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.25s ease;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+#video-call-btn:hover{
+  background: linear-gradient(145deg, #fed6e3, #a8edea);
+  transform: scale(1.05);
+}
+#remove-bg-btn:hover{
+  background: linear-gradient(145deg, #fed6e3, #a8edea);
+  transform: scale(1.05);
+}
+.message {
+  position: relative;
+  padding: 8px 12px;
+  border-radius: 8px;
+  max-width: 60%;
+  word-wrap: break-word;
+}
+.reply-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+.reply-btn:hover {
+  opacity: 1;
+  color: #41e2d4;
+}
+
+/* Nếu là tin nhắn của mình → nút ở bên trái */
+.message.mine .reply-btn {
+  left: -28px;
+}
+
+/* Nếu là tin nhắn của người khác → nút ở bên phải */
+.message.other .reply-btn {
+  right: -28px;
+}
+/* === Reply preview block (trước khi gửi) === */
+#reply-preview {
+  display: none;
+  background: linear-gradient(180deg, #fff8f0, #fef4ea, #ffffff);
+  color: rgb(0, 0, 0);
+  padding: 8px 12px;
+  border-left: 2px solid #eb1414;
+  border-right: 2px solid #eb1414;
+  border-top: 2px solid  #eb1414 ;
+  margin-left: 14px;
+  margin-right: 14px;
+  margin-bottom: 1px;
+  font-size: 14px;
+  position: relative;
+  border-radius: 2px;
+  max-height: 60px;       /* hạn chế chiều cao */
+  overflow: hidden;       /* tránh text quá dài */
+  text-overflow: ellipsis;
+  white-space: nowrap;    /* hiển thị 1 dòng gọn */
+}
+
+#reply-preview span {
+  color: #030303;
+  font-style: italic;
+}
+#cancel-reply {
+  position: absolute;
+  right: 6px;
+  top: 4px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 14px;
+  color: #e31717;
+  transition: color 0.2s;
+}
+#cancel-reply:hover {
+  color: #17bec1;
+}
+/* === Khối reply trong tin nhắn === */
+.reply-block {
+  font-size: 13px;
+  color: #444;
+  border-left: 3px solid #41e2d4;
+  padding: 8px 8px;
+  margin-bottom: 6px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #f0fdfa, #ffffff);
+  max-width: 90%;
+  white-space: nowrap;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.reply-block::before {
+  content: "↩";
+  color: #131313;
+  font-weight: bold;
+  margin-right: 6px;
+}
+.highlight-reply {
+  border: 2px solid red !important;
+  border-radius: 8px;
+  transition: border 0.3s ease;
+}
+
+/* Ghi đè float, dùng inline-flex để giữ cấu trúc */
+.message {
+  display: inline-flex;
+  flex-direction: column;  /* xếp reply-block trên text */
+  max-width: 60%;
+  padding: 8px 12px;
+  margin: 5px;
+  border-radius: 10px;
+  word-wrap: break-word;
+}
+/* Tin nhắn của mình (phải) */
+.message.mine {
+  align-items: flex-end;
+  margin-left: auto;
+  text-align: right;
+}
+/* Tin nhắn của người khác (trái) */
+.message.other {
+  align-items: flex-start;
+  margin-right: auto;
+  text-align: left;
+}
+/* Khối reply */
+.reply-block {
+  font-size: 12px;
+  border-left: 2px solid #ffffff;
+  padding: 4px 6px;
+  margin-bottom: 6px;
+  border-radius: 6px;
+  background: #f9f9f9;
+  opacity: 0.9;
+  max-width: 98%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* Icon reply mặc định hướng ra ngoài */
+/* Icon mặc định (tin nhắn nhận - other) → quay vào trong (trái) */
+.message.other .reply-btn i {
+  transform: scaleX(1); /* bình thường */
+}
+/* Tin nhắn gửi (mine - bên phải) → lật icon để quay vào trong (phải) */
+.message.mine .reply-btn i {
+  transform: scaleX(-1); /* lật ngang */
+}
+
+.mute-icon {
+  color: #f44336;
+  font-size: 14px;
+  vertical-align: middle;
+}
+
+#toggle-notification-btn{
+  padding: 6px 10px;
+  background: linear-gradient(145deg, #a8edea, #fed6e3);
+  border: none;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: bold;
+  color: #333;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.25s ease;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}  
+#toggle-notification-btn:hover{
+  background: linear-gradient(145deg, #fed6e3, #a8edea);
+  transform: scale(1.05);
 }
 

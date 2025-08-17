@@ -73,12 +73,21 @@
         <i class="fa-solid fa-angles-down"></i>
       </div>
       <div id="typing-indicator" class="typing-indicator"></div>
+        <div id="reply-preview">
+  <span id="reply-preview-text"></span>
+  <button id="cancel-reply" style="
+    position:absolute; right:5px; top:2px; border:none; background:none; cursor:pointer;
+  "><i class="fa fa-times"></i></button>
+        </div>
+
       <div class="chat-input">
         <!-- Nút upload và input file ẩn -->
         <button id="emoji-btn" title="Chọn emoji">
           <i class="fa-solid fa-face-smile"></i>
         </button>
-        <button id="uploadBtn">📎</button>
+        <button id="uploadBtn">
+          <i class="fa-solid fa-camera"></i>
+        </button>
         <input type="file" id="fileInput" accept="image/*,video/*" style="display: none" />
       
         <!-- Ô nhập tin nhắn và nút gửi -->
@@ -217,7 +226,10 @@ z-index:999;
         <canvas id="remote-meter" width="150" height="30"></canvas>
       </div>
     </div>
-
+    <div class="video-container">
+      <video id="local-video" autoplay muted playsinline style="display:none;"></video>
+      <video id="remote-video" autoplay playsinline style="display:none;"></video>
+    </div>
     <audio id="remote-audio" autoplay playsinline></audio>
 
     <!-- Nút điều khiển -->
