@@ -26,7 +26,7 @@
 
       <!-- Avatar ở góc dưới -->
        <div id="sidebar-avatar" class="sidebar-avatar">
-    <img src="default-avatar.png" alt="Avatar" id="sidebar-avatar-img">
+         <img  alt="Avatar" id="sidebar-avatar-img">
        </div>
     </aside>
 
@@ -60,9 +60,24 @@
 
     <!-- Hồ sơ cá nhân -->
     <aside class="profile-section">
+      <div id="notification-bell">
+        <i class="fa-solid fa-bell"></i>
+        <span id="notification-badge" class="hidden">0</span>
+      </div>
+        <!-- Popup thông báo -->
+      <div id="notification-popup" class="notification-popup hidden">
+    <h3>Thông báo</h3>
+    <ul id="notification-list"></ul>
+      </div>
       <div id="profile-avatar"></div>
       <h2 id="profile-username">...</h2>
       <p id="profile-bio">...</p>
+      <div class="profile-info">
+        <p id="profile-email"><i class="fas fa-envelope"></i> Email: Chưa cập nhật</p>
+        <p id="profile-gender"><i class="fas fa-venus-mars"></i> Giới tính: Chưa cập nhật</p>
+        <p id="profile-address"><i class="fas fa-map-marker-alt"></i> Địa chỉ: Chưa cập nhật</p>
+        <p id="profile-phone"><i class="fas fa-phone"></i> Số điện thoại: Chưa cập nhật</p>
+      </div>      
       <p id="profile-friends-count" class="friends-count">Bạn bè: 0</p>
       <button id="edit-profile">Chỉnh sửa thông tin</button>
     </aside>
@@ -74,6 +89,16 @@
       <input type="text" id="edit-username" placeholder="Tên tài khoản mới" />
       <textarea id="edit-bio" placeholder="Giới thiệu bản thân..."></textarea>
       <input   type="file" id="edit-avatar" accept="image/*" />
+      <input type="email" id="edit-email" placeholder="Email" />
+      <select id="edit-gender">
+  <option value="">Giới tính</option>
+  <option value="male">Nam</option>
+  <option value="female">Nữ</option>
+  <option value="other">Khác</option>
+      </select>
+      <input type="text" id="edit-address" placeholder="Địa chỉ" />
+      <input type="text" id="edit-phone" placeholder="Số điện thoại" />
+
       <button onclick="submitEdit()">Lưu thay đổi</button>
       <button onclick="closeModal()">Hủy</button>
     </div>
@@ -102,6 +127,7 @@
       <img class="popup-avatar" src="" alt="avatar">
       <h2 class="popup-username">Tên</h2>
       <p class="popup-bio">Giới thiệu</p>
+      <div class="popup-extra"></div>
       <button class="popup-message-btn" onclick="startChatWithUser()">Nhắn tin</button>
     </div>
   </div> 

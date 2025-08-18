@@ -1148,4 +1148,215 @@ box-shadow: 0 0 4px rgba(0,0,0,0.3);
   height: 100%;
   object-fit: cover;
 }
+/* Scrollbar cho .main-section */
+.main-section {
+  overflow-y: auto; /* bật cuộn dọc */
+  scrollbar-width: thin;       /* Firefox */
+  scrollbar-color: #eb1414 #f0f0f0; /* Firefox: màu thumb và track */
+}
 
+/* Chrome, Edge, Safari */
+.main-section::-webkit-scrollbar {
+  width: 10px;
+}
+
+.main-section::-webkit-scrollbar-track {
+  background: #f0f0f0;
+  border-radius: 5px;
+}
+
+.main-section::-webkit-scrollbar-thumb {
+  background: #eb1414;
+  border-radius: 5px;
+  transition: background 0.3s;
+}
+
+.main-section::-webkit-scrollbar-thumb:hover {
+  background: #a00f0f;
+}
+
+/* Optional: thêm shadow khi hover */
+.main-section::-webkit-scrollbar-thumb:active {
+  box-shadow: inset 0 0 2px rgba(0,0,0,0.5);
+}
+
+.profile-info {
+  margin-top: 10px;
+  text-align: left;
+  font-size: 0.95rem;
+  color: #444;
+}
+
+.profile-info p {
+  margin: 4px 0;
+  padding: 6px 10px;
+  background: #f9f9f9;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.profile-info p i {
+  margin-right: 6px;
+  color: #3b3c3c; /* xanh đẹp hơn */
+}
+.popup-extra {
+  background-color: transparent;
+  border: none;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  margin-top: 10px;
+  margin-bottom: 10px;
+  font-size: 0.9rem;
+  color: #444;
+  text-align: left;
+  padding: 5px;
+
+}
+
+.popup-extra p {
+  margin: 4px 0;
+  margin-left: 5px;
+}
+
+.popup-extra i {
+  margin-right: 6px;
+  color: #343639;
+}
+
+
+/* Chuông thông báo */
+#notification-bell {
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  font-size: 22px;
+  cursor: pointer;
+  color: #333;
+}
+
+#notification-bell:hover {
+  color: #007bff;
+  transform: scale(1.1);
+  transition: 0.2s;
+}
+
+/* Badge số lượng */
+#notification-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background: red;
+  color: white;
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 50%;
+  font-weight: bold;
+}
+
+/* Popup thông báo */
+.notification-popup {
+  position: absolute;
+  top: 40px;
+  right: 10px;
+  width: 250px;
+  max-height: 300px;
+  overflow-y: auto;
+  background: rgb(223, 218, 218, 0.9);
+  border-radius: 10px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+  padding: 10px;
+  z-index: 2000;
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.notification-popup.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.notification-popup h3 {
+  margin: 0 0 8px;
+  font-size: 16px;
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 4px;
+}
+
+.notification-popup ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.notification-popup li {
+  font-size: 14px;
+  padding: 6px 4px;
+  border-bottom: 1px solid #eee;
+}
+
+.notification-popup li:last-child {
+  border-bottom: none;
+}
+/* Style cho danh sách thông báo */
+#notification-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+#notification-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;                 /* khoảng cách giữa icon và text */
+  padding: 8px 10px;
+  border-bottom: 1px solid #eee;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+#notification-list li i {
+  color: #4caf50;           /* màu xanh lá cho icon */
+  font-size: 16px;
+  min-width: 18px;          /* để icon thẳng hàng */
+  text-align: center;
+}
+
+#notification-list li:hover {
+  background: #f9f9f9;
+}
+
+/* Nút xóa thông báo */
+#notification-list li button {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: #999;
+  cursor: pointer;
+  font-size: 14px;
+  transition: color 0.2s;
+}
+
+#notification-list li button:hover {
+  color: #e53935;           /* đỏ khi hover */
+}
+
+/* tên user trong thông báo */
+#notification-list .notif-username {
+  color: #1e88e5 !important;
+  font-weight: 700 !important;
+}
+
+/* chỗ hiển thị thông báo chưa đọc */
+.notification-popup li.notif-unread {
+  background: linear-gradient(90deg, rgba(30,136,229,0.06), rgba(255,255,255,0));
+  border-left: 3px solid #1e88e5;
+}
+
+/* sửa layout nút xóa / control */
+.notification-popup li > span {
+  float: right;
+}
+
+/* optional: giảm margin giữa icon và text */
+.notification-popup li i.fa-user-plus { margin-right: 6px; }

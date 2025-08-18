@@ -11,6 +11,47 @@ document.addEventListener('DOMContentLoaded', async () => {
   loadUserSuggestions();       // list
   setupUIListeners();
 });
+// --- Helpers an toàn ---
+function safeImageURL(url, fallback = 'default-avatar.png') {
+  if (!url || typeof url !== 'string') return fallback;
+  try {
+    const u = new URL(url, window.location.origin);
+    return u.href;
+  } catch {
+    return fallback;
+  }
+}
+
+function renderActionButtonSafe(status, userId) {
+  const wrap = document.createElement('div');
+  wrap.className = 'user-buttons';
+
+  const mk = (label, action, id, extra = {}) => {
+    const b = document.createElement('button');
+    b.textContent = label;
+    b.dataset.action = action;
+    b.dataset.id = String(id);
+    Object.entries(extra).forEach(([k, v]) => (b.dataset[k] = String(v)));
+    return b;
+  };
+
+  if (status.status === 'none') {
+    wrap.append(mk('Kết bạn', 'add', userId));
+  } else if (status.status === 'friends') {
+    wrap.append(mk('Hủy kết bạn', 'unfriend', userId));
+  } else if (status.status === 'request-received') {
+    wrap.append(
+      mk('Chấp nhận', 'accept', status.requestId, { senderId: userId }),
+      mk('Từ chối', 'decline', status.requestId, { senderId: userId })
+    );
+  } else if (status.status === 'request-sent') {
+    const span = document.createElement('span');
+    span.textContent = 'Đã gửi lời mời';
+    wrap.append(span);
+  }
+  return wrap;
+}
+
 
 function setupUIListeners() {
   document.getElementById('edit-profile').addEventListener('click', openModal);
@@ -182,7 +223,7 @@ async function triggerSearch(query) {
   }
 
   // Nếu popup lịch sử đang mở thì làm mới lại
-  if (!searchHistoryPopup.classList.contains('hidden')) {
+  if (searchHistoryPopup.classList.contains('show')) {
     await fetchAndRenderSearchHistory();
   }
 
@@ -224,100 +265,70 @@ async function renderSearchResults(results) {
   searchResultsEl.innerHTML = '';
 
   if (!me) {
-    searchResultsEl.innerHTML = '<p>Vui lòng đăng nhập để xem kết quả.</p>';
+    searchResultsEl.textContent = 'Vui lòng đăng nhập để xem kết quả.';
     return;
   }
 
-  // Lọc bỏ user hiện tại
-  const filteredResults = results.filter(user => user.id !== me.id);
-
-  if (filteredResults.length === 0) {
-    searchResultsEl.innerHTML = '<p>Không tìm thấy kết quả.</p>';
+  // bỏ chính mình
+  const items = (results || []).filter(u => u.id !== me.id);
+  if (items.length === 0) {
+    searchResultsEl.textContent = 'Không tìm thấy kết quả.';
     return;
   }
 
-  // Lấy trạng thái bạn bè cho tất cả user song song
-  const statuses = await Promise.all(filteredResults.map(user => getFriendStatus(user.id)));
+  // lấy trạng thái bạn bè song song
+  const statuses = await Promise.all(items.map(u => getFriendStatus(u.id)));
 
-  for (let i = 0; i < filteredResults.length; i++) {
-    const user = filteredResults[i];
+  for (let i = 0; i < items.length; i++) {
+    const user = items[i];
     const status = statuses[i];
-
-    let btnHtml = '';
-
-    if (status.status === 'none') {
-      btnHtml = `<button data-id="${user.id}" data-action="add">Kết bạn</button>`;
-    } else if (status.status === 'friends') {
-      btnHtml = `<button data-id="${user.id}" data-action="unfriend">Hủy kết bạn</button>`;
-    } else if (status.status === 'request-received') {
-      btnHtml = `
-        <button data-id="${status.requestId}" data-action="accept" data-sender-id="${user.id}">Chấp nhận</button>
-        <button data-id="${status.requestId}" data-action="decline" data-sender-id="${user.id}">Từ chối</button>
-      `;
-    } else if (status.status === 'request-sent') {
-      btnHtml = `<span>Đã gửi lời mời</span>`;
-    }
 
     const item = document.createElement('div');
     item.className = 'user-item';
-    
+
     const info = document.createElement('div');
     info.className = 'user-info';
-    
+
     const opts = document.createElement('span');
     opts.className = 'user-options';
     opts.dataset.userid = String(user.id);
     opts.textContent = '⋮';
-    
+
     const img = document.createElement('img');
     img.className = 'user-avatar';
-    img.src = safeImageURL(user.avatar, 'default.png');
+    img.src = safeImageURL(user.avatar, 'default-avatar.png');
     img.alt = user.username || '';
-    
+    img.dataset.userid = String(user.id); // để tô viền online/offline
+
     const name = document.createElement('span');
     name.textContent = user.username || '';
-    
+
     info.append(opts, img, name);
-    
-    const btnWrap = document.createElement('div');
-    btnWrap.className = 'user-buttons';
-    btnWrap.append(renderActionButtonSafe(status));
-    
+
+    const btnWrap = renderActionButtonSafe(status, user.id);
     item.append(info, btnWrap);
-    listEl.appendChild(item);
-    
 
-    // Thêm sự kiện mở popup info
-    item.querySelector('.user-options').addEventListener('click', () => {
-      openUserInfoPopup(user.id);
-    });
+    // mở popup info
+    opts.addEventListener('click', () => openUserInfoPopup(user.id));
 
-    // Thêm sự kiện cho các nút thao tác
+    // gắn handler cho các nút
     item.querySelectorAll('button').forEach(btn => {
-      btn.addEventListener('click', async (e) => {
+      btn.addEventListener('click', async () => {
         const userId = btn.dataset.id;
         const action = btn.dataset.action;
 
         if (action === 'add') {
           const ok = await sendFriendRequest(userId);
-          if (ok && socket && me) {
-            socket.emit('friend:send_request', { senderId: me.id, receiverId: userId });
-          }
+          if (ok && socket && me) socket.emit('friend:send_request', { senderId: me.id, receiverId: userId });
         } else if (action === 'unfriend') {
           const ok = await unfriend(userId);
-          if (ok && socket && me) {
-            socket.emit('friend:unfriend', { userId: me.id, friendId: userId });
-          }
+          if (ok && socket && me) socket.emit('friend:unfriend', { userId: me.id, friendId: userId });
         } else if (action === 'accept') {
           const ok = await acceptRequest(userId);
-          if (ok && socket && me) {
-            socket.emit('friend:accept_request', { senderId: btn.dataset.senderId || null, receiverId: me.id });
-          }
+          if (ok && socket && me) socket.emit('friend:accept_request', { senderId: btn.dataset.senderId || null, receiverId: me.id });
         } else if (action === 'decline') {
           const ok = await declineRequest(userId);
-          if (ok && socket && me) {
-            socket.emit('friend:decline_request', { senderId: btn.dataset.senderId || null, receiverId: me.id });
-          }
+          if (ok && socket && me) socket.emit('friend:decline_request', { senderId: btn.dataset.senderId || null, receiverId: me.id });
         }
 
         await loadUserSuggestions();
@@ -372,7 +383,11 @@ function initSocket() {
   socket.on('friend:request_received', async ({ senderId }) => {
     console.log('Realtime: request received from', senderId);
     await loadUserSuggestions();
+    // Reload danh sách thông báo từ DB (server sẽ tạo thông báo rồi emit 'notification:new' nếu bạn đã thêm bên backend)
+    await renderNotificationsFromDB();
   });
+  
+  
 
   socket.on('friend:request_sent', async ({ receiverId, senderId }) => {
     if (senderId !== me.id) { 
@@ -400,6 +415,12 @@ function initSocket() {
   socket.on('friend:update_count', async () => {
     await loadProfile();
   });
+  socket.on('notification:new', async (notif) => {
+    // notif là bản ghi mới server vừa tạo
+    await renderNotificationsFromDB();
+  });
+  
+  
 }
 
 function updateUserListOnlineStatus() {
@@ -422,12 +443,36 @@ async function loadProfile() {
   me = data;
 
   // Avatar trong profile section
-  document.getElementById('profile-avatar').innerHTML =
-    `<img src="${data.avatar || 'default-avatar.png'}" alt="avatar">`;
+  const pa = document.getElementById('profile-avatar');
+  pa.innerHTML = '';
+  const im = document.createElement('img');
+  im.src = safeImageURL(data.avatar, 'default-avatar.png');
+  im.alt = 'avatar';
+  pa.appendChild(im);
+  
   document.getElementById('profile-username').textContent = data.username;
   document.getElementById('profile-bio').textContent = data.bio || 'Chưa có giới thiệu';
+  document.getElementById('profile-email').innerHTML =
+  `<i class="fas fa-envelope"></i> |  Email: ${data.email || 'Chưa cập nhật'}`;
+  const genderMap = {
+    male: "Nam",
+    female: "Nữ",
+    other: "Khác"
+  };
+  document.getElementById('profile-gender').innerHTML =
+    `<i class="fas fa-venus-mars"></i> | Giới tính: ${genderMap[data.gender] || 'Chưa cập nhật'}`;
+  
+  document.getElementById('profile-address').innerHTML =
+  `<i class="fas fa-map-marker-alt"></i> |  Địa chỉ: ${data.address || 'Chưa cập nhật'}`;
+  document.getElementById('profile-phone').innerHTML =
+  `<i class="fas fa-phone"></i> |  Số điện thoại: ${data.phone || 'Chưa cập nhật'}`;
+
   document.getElementById('profile-friends-count').textContent = `Bạn bè: ${data.friends_count}`;
   document.getElementById('edit-username').value = data.username;
+  document.getElementById('edit-email').value = data.email || '';
+  document.getElementById('edit-gender').value = data.gender || '';
+  document.getElementById('edit-address').value = data.address || '';
+  document.getElementById('edit-phone').value = data.phone || '';
   document.getElementById('edit-bio').value = data.bio || '';
 
   // Avatar sidebar & popup logout
@@ -456,47 +501,41 @@ async function loadUserSuggestions() {
     const users = await res.json();
     const listEl = document.getElementById('user-list');
     listEl.innerHTML = '';
-  
-    for (let user of users) {
+    
+    for (const user of users) {
       const status = await getFriendStatus(user.id);
-      let btnHtml = '';
-  
-      if (status.status === 'none') {
-        btnHtml = `<button data-id="${user.id}" data-action="add">Kết bạn</button>`;
-      } else if (status.status === 'friends') {
-        btnHtml = `<button data-id="${user.id}" data-action="unfriend">Hủy kết bạn</button>`;
-      } else if (status.status === 'request-received') {
-        btnHtml = `
-          <button data-id="${status.requestId}" data-action="accept" data-sender-id="${user.id}">Chấp nhận</button>
-          <button data-id="${status.requestId}" data-action="decline" data-sender-id="${user.id}">Từ chối</button>
-        `;
-      } else if (status.status === 'request-sent') {
-        btnHtml = `<span>Đã gửi lời mời</span>`;
-      }
-  
+    
       const item = document.createElement('div');
       item.className = 'user-item';
-      item.innerHTML = `
-        <div class="user-info">
-          <span class="user-options" data-userid="${user.id}">⋮</span>
-          <img class="user-avatar" 
-               src="${user.avatar || 'default-avatar.png'}" 
-               alt="${user.username}"
-               data-userid="${user.id}">
-          <span>${user.username}</span>
-        </div>
-        <div class="user-buttons">${btnHtml}</div>
-      `;
-  
-      // Thêm sự kiện mở popup info
-      item.querySelector('.user-options').addEventListener('click', () => {
-        openUserInfoPopup(user.id);
-      });
-  
+    
+      const info = document.createElement('div');
+      info.className = 'user-info';
+    
+      const opts = document.createElement('span');
+      opts.className = 'user-options';
+      opts.dataset.userid = String(user.id);
+      opts.textContent = '⋮';
+    
+      const img = document.createElement('img');
+      img.className = 'user-avatar';
+      img.src = safeImageURL(user.avatar, 'default-avatar.png');
+      img.alt = user.username || '';
+      img.dataset.userid = String(user.id);
+    
+      const name = document.createElement('span');
+      name.textContent = user.username || '';
+    
+      info.append(opts, img, name);
+    
+      const btnWrap = renderActionButtonSafe(status, user.id);
+      item.append(info, btnWrap);
+    
+      opts.addEventListener('click', () => openUserInfoPopup(user.id));
+    
       listEl.appendChild(item);
     }
-  
     updateUserListOnlineStatus();
+    
 }
 //popup
 let selectedUserId = null;
@@ -504,17 +543,32 @@ let selectedUserId = null;
 function openUserInfoPopup(userId) {
   selectedUserId = userId;
 
-  // Lấy thông tin user để hiện popup
   authFetch(`/api/users/${userId}`)
     .then(res => res.json())
     .then(user => {
+      const genderMap = {
+        male: "Nam",
+        female: "Nữ",
+        other: "Khác"
+      };
+
       document.querySelector('#user-info-popup .popup-avatar').src = user.avatar || 'default-avatar.png';
       document.querySelector('#user-info-popup .popup-username').textContent = user.username;
       document.querySelector('#user-info-popup .popup-bio').textContent = user.bio || '';
+
+      // thêm thông tin bổ sung
+      const infoEl = document.querySelector('#user-info-popup .popup-extra');
+      infoEl.innerHTML = `
+        <p><i class="fas fa-envelope"></i>| ${user.email || 'Chưa cập nhật'}</p>
+        <p><i class="fas fa-venus-mars"></i>| ${genderMap[user.gender] || 'Chưa cập nhật'}</p>
+        <p><i class="fas fa-map-marker-alt"></i>| ${user.address || 'Chưa cập nhật'}</p>
+        <p><i class="fas fa-phone"></i>| ${user.phone || 'Chưa cập nhật'}</p>
+      `;
+
       document.getElementById('user-info-popup').classList.add('show');
-      
     });
 }
+
 
 function closeUserInfoPopup() {
   document.getElementById('user-info-popup').classList.remove('show');
@@ -568,11 +622,19 @@ window.closeModal = function () { document.getElementById('edit-modal').classLis
 window.submitEdit = async function () {
   const username = document.getElementById('edit-username').value;
   const bio = document.getElementById('edit-bio').value;
+  const email = document.getElementById('edit-email').value;
+  const gender = document.getElementById('edit-gender').value;
+  const address = document.getElementById('edit-address').value;
+  const phone = document.getElementById('edit-phone').value;
   const avatarFile = document.getElementById('edit-avatar').files[0];
 
   const formData = new FormData();
   formData.append('username', username);
   formData.append('bio', bio);
+  formData.append('email', email);
+  formData.append('gender', gender);
+  formData.append('address', address);
+  formData.append('phone', phone);
   if (avatarFile) formData.append('avatar', avatarFile);
 
   const res = await authFetch('/api/users/me', {
@@ -623,4 +685,160 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 });
+
+
+// ---------- Notifications (DB-backed) ----------
+const bell = document.getElementById('notification-bell');
+const popup = document.getElementById('notification-popup');
+const list = document.getElementById('notification-list');
+const badge = document.getElementById('notification-badge');
+
+async function fetchNotifications() {
+  try {
+    const res = await authFetch('/api/notifications');
+    if (!res.ok) throw new Error('fetch notifications failed');
+    return await res.json();
+  } catch (e) {
+    console.error(e);
+    return [];
+  }
+}
+
+async function markRead(id) {
+  try {
+    await authFetch(`/api/notifications/${id}/read`, { method: 'PATCH' });
+  } catch (e) {
+    console.error('markRead failed', e);
+  }
+}
+async function markUnread(id) {
+  try {
+    await authFetch(`/api/notifications/${id}/unread`, { method: 'PATCH' });
+  } catch (e) {
+    console.error('markUnread failed', e);
+  }
+}
+
+async function deleteNotif(id) {
+  try {
+    await authFetch(`/api/notifications/${id}`, { method: 'DELETE' });
+  } catch (e) {
+    console.error('delete notification failed', e);
+  }
+}
+
+async function renderNotificationsFromDB() {
+  const notifs = await fetchNotifications();
+
+  list.innerHTML = '';
+  if (!notifs.length) {
+    list.innerHTML = '<li>Không có thông báo</li>';
+    badge.classList.add('hidden');
+    return;
+  }
+
+  const unread = notifs.filter(n => !n.is_read).length;
+  badge.textContent = unread;
+  badge.classList.toggle('hidden', unread === 0);
+
+  notifs.forEach(n => {
+    const li = document.createElement('li');
+    li.className = n.is_read ? '' : 'notif-unread';
+  
+    // checkbox
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.checked = n.is_read; // đã đọc -> tích sẵn
+    checkbox.style.marginRight = '8px';
+  
+    checkbox.addEventListener('change', async (ev) => {
+      if (ev.target.checked) {
+        // đánh dấu đã đọc
+        await markRead(n.id);
+      } else {
+        // đánh dấu chưa đọc
+        await markUnread(n.id);
+      }
+    
+      // ✅ cập nhật badge ngay lập tức
+      const current = Number(badge.textContent) || 0;
+      if (ev.target.checked) {
+        // vừa tick -> số unread giảm
+        const next = Math.max(0, current - 1);
+        badge.textContent = next;
+        badge.classList.toggle('hidden', next === 0);
+      } else {
+        // vừa bỏ tick -> số unread tăng
+        const next = current + 1;
+        badge.textContent = next;
+        badge.classList.remove('hidden');
+      }
+    
+      // Sau đó render lại toàn bộ danh sách để đồng bộ
+      await renderNotificationsFromDB();
+  });
+    
+  
+    // message
+    const span = document.createElement('span');
+    span.innerHTML = n.message;
+  
+    // nút xoá
+    const delBtn = document.createElement('button');
+    delBtn.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+    delBtn.title = 'Xóa';
+    delBtn.style.background = 'transparent';
+    delBtn.style.border = 'none';
+    delBtn.style.cursor = 'pointer';
+    delBtn.style.color = '#999';
+    delBtn.style.fontSize = '14px';
+    delBtn.addEventListener('mouseenter', () => delBtn.style.color = '#e53935');
+    delBtn.addEventListener('mouseleave', () => delBtn.style.color = '#999');
+    delBtn.addEventListener('click', async (ev) => {
+      ev.stopPropagation();
+      await deleteNotif(n.id);
+      await renderNotificationsFromDB();
+    });
+  
+    li.appendChild(checkbox);
+    li.appendChild(span);
+    li.appendChild(delBtn);
+    list.appendChild(li);
+  });
+  
+}
+
+// Toggle popup: mở là tải + mark all read
+bell.addEventListener('click', async () => {
+  popup.classList.toggle('show');
+  popup.classList.toggle('hidden');
+
+  if (popup.classList.contains('show')) {
+    // render lần 1 để thấy danh sách ngay
+    await renderNotificationsFromDB();
+
+    // mark tất cả thông báo chưa đọc
+    const notifs = await fetchNotifications();
+    const unreadIds = notifs.filter(n => !n.is_read).map(n => n.id);
+    if (unreadIds.length) {
+      await Promise.all(unreadIds.map(id => markRead(id)));
+      await renderNotificationsFromDB();
+    }
+  }
+});
+
+// Click outside để đóng popup
+document.addEventListener('mousedown', (e) => {
+  if (!popup.contains(e.target) && !bell.contains(e.target)) {
+    popup.classList.remove('show');
+    popup.classList.add('hidden');
+  }
+});
+
+// Load ban đầu
+document.addEventListener('DOMContentLoaded', () => {
+  renderNotificationsFromDB();
+});
+
+
 
