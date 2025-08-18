@@ -317,7 +317,17 @@ document.getElementById('delete-chat-btn').addEventListener('click', () => {
 
 
   function addMessageToUI(msg) {
-    const msgDateStr = new Date(msg.created_at).toLocaleDateString(); // dạng dd/mm/yyyy
+    const dateObj = new Date(msg.created_at);
+  
+    // Ép giờ Việt Nam
+    const msgDateStr = dateObj.toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }); // dd/mm/yyyy
+    const msgTimeStr = dateObj.toLocaleTimeString('vi-VN', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+      timeZone: 'Asia/Ho_Chi_Minh'
+    }); // HH:MM:SS
   
     // Tạo phần tử tin nhắn
     const msgDiv = document.createElement('div');
@@ -326,52 +336,48 @@ document.getElementById('delete-chat-btn').addEventListener('click', () => {
     msgDiv.dataset.senderId = String(msg.sender_id);
     if (msg.sender_id == me.id) msgDiv.classList.add('mine');
     else msgDiv.classList.add('other');
-    // --- HIỂN THỊ TIN NHẮN TRẢ LỜI ---
-
+  
+    // --- Tooltip thời gian ---
+    const timeSpan = document.createElement('span');
+    timeSpan.classList.add('msg-time-tooltip');
+    timeSpan.textContent = msgTimeStr;
+    msgDiv.appendChild(timeSpan);
+  
+    // --- Tin nhắn trả lời ---
     if (msg.reply_message) {
       const replyBlock = document.createElement('div');
       replyBlock.classList.add('reply-block');
-    
       replyBlock.onclick = (e) => {
-        e.stopPropagation(); // 🚫 chặn click lan tới msgDiv
-    
+        e.stopPropagation();
         const targetId = msg.reply_message?.id;
         if (!targetId) return;
-    
         const targetMsg = document.querySelector(`.message[data-id="${targetId}"]`);
         if (targetMsg) {
           targetMsg.scrollIntoView({ behavior: "smooth", block: "center" });
           targetMsg.classList.add("highlight-reply");
-          setTimeout(() => {
-            targetMsg.classList.remove("highlight-reply");
-          }, 1500);
+          setTimeout(() => targetMsg.classList.remove("highlight-reply"), 1500);
         }
       };
-    
+  
       if (msg.reply_message.content) {
         replyBlock.textContent = ` ${msg.reply_message.content}`;
       } else if (msg.reply_message.media_url) {
-        if (msg.reply_message.media_type === 'image') {
-          replyBlock.textContent = '📷 Ảnh';
-        } else {
-          replyBlock.textContent = '🎥 Video';
-        }
+        replyBlock.textContent = msg.reply_message.media_type === 'image' ? '📷 Ảnh' : '🎥 Video';
       } else {
         replyBlock.textContent = '↩️ Tin nhắn đã xoá';
       }
-    
+  
       msgDiv.insertBefore(replyBlock, msgDiv.firstChild);
     }
-    
-
-    // Nội dung text
+  
+    // --- Nội dung text ---
     if (msg.content) {
       const text = document.createElement('p');
       text.textContent = msg.content;
       msgDiv.appendChild(text);
     }
   
-    // Nội dung media
+    // --- Nội dung media ---
     if (msg.media_url) {
       if (msg.media_type === 'image') {
         const img = document.createElement('img');
@@ -386,27 +392,22 @@ document.getElementById('delete-chat-btn').addEventListener('click', () => {
         msgDiv.appendChild(video);
       }
     }
-    // lưu tin nhắn 
-    // --- THÊM NÚT REPLY --- 
-// --- THÊM NÚT REPLY ---
+  
+    // --- Nút reply ---
     const replyBtn = document.createElement('button');
     replyBtn.classList.add('reply-btn');
     replyBtn.innerHTML = '<i class="fa fa-reply"></i>';
     replyBtn.onclick = () => showReplyPreview(msg);
     msgDiv.appendChild(replyBtn);
-
-
-    //msgDiv.addEventListener('mouseenter', () => replyBtn.style.display = 'inline-block');
-    //msgDiv.addEventListener('mouseleave', () => replyBtn.style.display = 'none');
   
-    // Trạng thái tin nhắn
+    // --- Trạng thái tin nhắn ---
     const statusEl = document.createElement('div');
     statusEl.classList.add('msg-status');
     statusEl.textContent = msg.seen_at ? '✓ Đã xem' : '✓ Đã gửi';
     statusEl.style.display = 'none';
     msgDiv.appendChild(statusEl);
   
-    // Xử lý xóa tin nhắn và xem trạng thái nếu là của mình
+    // --- Xử lý click xóa / context menu ---
     if (msg.sender_id == me.id) {
       msgDiv.addEventListener('click', async (e) => {
         e.preventDefault();
@@ -435,23 +436,21 @@ document.getElementById('delete-chat-btn').addEventListener('click', () => {
       });
     }
   
-    // --- PHẦN QUAN TRỌNG: Divider kiểu 1 ---
+    // --- Divider theo ngày ---
     let divider = document.querySelector(`.date-divider[data-date="${msgDateStr}"]`);
     if (!divider) {
-      // Nếu chưa có divider cho ngày này → tạo và chèn trước tin nhắn này
       divider = document.createElement('div');
       divider.classList.add('date-divider');
       divider.dataset.date = msgDateStr;
       divider.textContent = `--- ${msgDateStr} ---`;
-  
-      messageList.appendChild(divider); // thêm divider
+      messageList.appendChild(divider);
     }
   
-    messageList.appendChild(msgDiv); // thêm tin nhắn dưới divider
-  
-    // Cuộn xuống cuối
+    messageList.appendChild(msgDiv);
     messageList.scrollTop = messageList.scrollHeight;
   }
+  
+  
   
   
   const uploadBtn = document.getElementById('uploadBtn');

@@ -260,14 +260,32 @@ async function renderSearchResults(results) {
 
     const item = document.createElement('div');
     item.className = 'user-item';
-    item.innerHTML = `
-      <div class="user-info">
-        <span class="user-options" data-userid="${user.id}">⋮</span>
-        <img class="user-avatar" src="${user.avatar || 'default-avatar.png'}" alt="${user.username}" data-userid="${user.id}">
-        <span>${user.username}</span>
-      </div>
-      <div class="user-buttons">${btnHtml}</div>
-    `;
+    
+    const info = document.createElement('div');
+    info.className = 'user-info';
+    
+    const opts = document.createElement('span');
+    opts.className = 'user-options';
+    opts.dataset.userid = String(user.id);
+    opts.textContent = '⋮';
+    
+    const img = document.createElement('img');
+    img.className = 'user-avatar';
+    img.src = safeImageURL(user.avatar, 'default.png');
+    img.alt = user.username || '';
+    
+    const name = document.createElement('span');
+    name.textContent = user.username || '';
+    
+    info.append(opts, img, name);
+    
+    const btnWrap = document.createElement('div');
+    btnWrap.className = 'user-buttons';
+    btnWrap.append(renderActionButtonSafe(status));
+    
+    item.append(info, btnWrap);
+    listEl.appendChild(item);
+    
 
     // Thêm sự kiện mở popup info
     item.querySelector('.user-options').addEventListener('click', () => {
