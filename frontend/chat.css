@@ -1902,23 +1902,32 @@
   position: relative;
 }
 
+
 .msg-time-tooltip {
   position: absolute;
-  bottom: 100%; /* trên tin nhắn */
-  right: 0;
-  background: rgba(0,0,0,0.7);
-  color: #fff;
-  font-size: 12px;
+  top: -20px; /* hoặc tuỳ chỉnh */
+  font-size: 0.7rem;
+  color: #888;
+  background: rgba(0,0,0,0.6);
+  color: white;
   padding: 2px 6px;
   border-radius: 4px;
+  display: none;
   white-space: nowrap;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.2s;
+  z-index: 10;
 }
 
+/* Tooltip bên phải cho tin nhắn của mình */
+.message.mine .msg-time-tooltip {
+  right: 0; /* sát góc phải tin nhắn */
+}
+
+/* Tooltip bên trái cho tin nhắn người khác */
+.message.other .msg-time-tooltip {
+  left: 0; /* sát góc trái tin nhắn */
+}
+
+/* Hiện tooltip khi hover message */
 .message:hover .msg-time-tooltip {
-  opacity: 1;
-  visibility: visible;
+  display: inline-block;
 }
-

@@ -20,6 +20,10 @@ const searchRoutes = require('./routes/search.routes');
 const blockRoutes = require('./routes/block.routes');
 const groupRoutes = require('./routes/group.routes');
 const callRoutes = require('./routes/calls.routes');
+const weatherRoutes = require('./routes/weather.js');
+const notificationRoutes = require('./routes/notification.routes');
+
+// ...
 
 
 
@@ -30,6 +34,8 @@ app.use('/api/friends', friendRoutes);
 app.use('/api/search', searchRoutes);
 app.use('/api/block', blockRoutes);
 app.use('/api/calls', callRoutes);
+app.use('/api/weather', weatherRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Khi vào / => mở auth.html
 app.get('/', (req, res) => {

@@ -57,13 +57,40 @@ function socketHandler(io) {
     });
 
     // Friend request events
-    socket.on('friend:send_request', ({ senderId, receiverId }) => {
-      const recvSocketId = onlineUsers.get(String(receiverId));
-      if (recvSocketId) {
-        io.to(recvSocketId).emit('friend:request_received', { senderId, receiverId });
+    socket.on('friend:send_request', async ({ senderId, receiverId }) => {
+      try {
+        // Lấy tên người gửi
+        const senderRes = await pool.query(
+          `SELECT username FROM users WHERE id = $1`,
+          [senderId]
+        );
+        const senderName = senderRes.rows[0]?.username || 'Người dùng';
+    
+        const message = `<i class="fa-solid fa-user-plus"></i> ${senderName} đã gửi lời mời kết bạn`;
+    
+        // 1. Tạo thông báo trong DB
+        const { rows } = await pool.query(
+          `INSERT INTO notifications (user_id, sender_id, type, message, is_read, created_at)
+           VALUES ($1, $2, 'friend_request', $3, false, NOW()) RETURNING *`,
+          [receiverId, senderId, message]
+        );
+        const notif = rows[0];
+    
+        // 2. Nếu receiver đang online -> emit realtime cho họ
+        const recvSocketId = onlineUsers.get(String(receiverId));
+        if (recvSocketId) {
+          io.to(recvSocketId).emit('friend:request_received', { senderId, receiverId });
+          io.to(recvSocketId).emit('notification:new', notif);
+        }
+    
+        // 3. Xác nhận cho sender
+        socket.emit('friend:request_sent', { senderId, receiverId });
+      } catch (err) {
+        console.error('Lỗi tạo thông báo friend_request:', err);
       }
-      socket.emit('friend:request_sent', { senderId, receiverId });
     });
+    
+    
 
     socket.on('friend:accept_request', ({ senderId, receiverId }) => {
       const senderSock = onlineUsers.get(String(senderId));
@@ -227,6 +254,28 @@ socket.on('call:init', async ({ calleeId, type }) => {
     console.log(`Socket ${socket.id} joined rtc room ${rtcRoomId} (user ${socket.userId})`);
   } catch (err) {
     console.error('join:rtc error', err);
+  }
+    });
+    // socket/index.js (thêm dưới phần socket.on('connection'))
+    socket.on('notification:send', async ({ receiverId, message, type }) => {
+  if (!socket.userId) return;
+
+  try {
+    // lưu DB
+    const { rows } = await pool.query(
+      `INSERT INTO notifications (user_id, message, type, is_read, created_at) 
+       VALUES ($1,$2,$3,false,NOW()) RETURNING *`,
+      [receiverId, message, type || 'general']
+    );
+    const notif = rows[0];
+
+    // nếu user online thì gửi realtime
+    const recvSock = onlineUsers.get(String(receiverId));
+    if (recvSock) {
+      io.to(recvSock).emit('notification:new', notif);
+    }
+  } catch (err) {
+    console.error('Lỗi lưu notification', err);
   }
     });
 

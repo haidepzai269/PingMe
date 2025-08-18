@@ -6,43 +6,67 @@ const esClient = new Client({ node: process.env.ELASTIC_URL || 'http://localhost
 const ES_INDEX = 'users_index';
 
 // --- Tìm kiếm người dùng ---
+// exports.searchUsers = async (req, res) => {
+//   const q = req.query.q?.trim();
+//   console.log('Search query:', q);
+//   if (!q) return res.json([]);
+
+//   try {
+//     const result = await esClient.search({
+//       index: ES_INDEX,
+//       query: {
+//         multi_match: {
+//           query: q,
+//           fields: ['username^2', 'bio'],
+//           fuzziness: 'AUTO'
+//         }
+//       }
+//     });
+
+//     console.log('ES search result:', JSON.stringify(result, null, 2));
+
+//     if (!result.hits) {
+//       return res.json([]);
+//     }
+
+//     const hits = result.hits.hits.map(h => ({
+//       id: h._source.id,
+//       username: h._source.username,
+//       avatar: h._source.avatar,
+//       bio: h._source.bio
+//     }));
+
+//     res.json(hits);
+//   } catch (err) {
+//     console.error('ES search error:', err);
+//     res.status(500).json({ message: 'Search error' });
+//   }
+// };
+// --- Tìm kiếm người dùng bằng PostgreSQL FTS ---
 exports.searchUsers = async (req, res) => {
   const q = req.query.q?.trim();
   console.log('Search query:', q);
   if (!q) return res.json([]);
 
   try {
-    const result = await esClient.search({
-      index: ES_INDEX,
-      query: {
-        multi_match: {
-          query: q,
-          fields: ['username^2', 'bio'],
-          fuzziness: 'AUTO'
-        }
-      }
-    });
+    // Truy vấn FTS
+    const { rows } = await pool.query(
+      `
+      SELECT id, username, avatar, bio
+      FROM users
+      WHERE to_tsvector('simple', username || ' ' || coalesce(bio, ''))
+            @@ plainto_tsquery('simple', $1)
+      LIMIT 20
+      `,
+      [q]
+    );
 
-    console.log('ES search result:', JSON.stringify(result, null, 2));
-
-    if (!result.hits) {
-      return res.json([]);
-    }
-
-    const hits = result.hits.hits.map(h => ({
-      id: h._source.id,
-      username: h._source.username,
-      avatar: h._source.avatar,
-      bio: h._source.bio
-    }));
-
-    res.json(hits);
+    res.json(rows);
   } catch (err) {
-    console.error('ES search error:', err);
+    console.error('DB search error:', err);
     res.status(500).json({ message: 'Search error' });
   }
 };
-
 
 
 // --- Lấy lịch sử tìm kiếm ---
