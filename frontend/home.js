@@ -415,10 +415,111 @@ function initSocket() {
   socket.on('friend:update_count', async () => {
     await loadProfile();
   });
-  socket.on('notification:new', async (notif) => {
-    // notif là bản ghi mới server vừa tạo
-    await renderNotificationsFromDB();
+  socket.on('notification:new', (notif) => {
+    console.log('🔔 New notif:', notif);
+  
+    const li = document.createElement('li');
+    li.className = notif.is_read ? '' : 'notif-unread';
+  
+    // chọn icon theo type
+    let iconHtml = '';
+    switch (notif.type) {
+      case 'friend_request':
+        iconHtml = '<i class="fa-solid fa-user-plus"></i>';
+        break;
+      case 'message':
+        iconHtml = '<i class="fa-solid fa-envelope"></i>';
+        break;
+      case 'system':
+        iconHtml = '<i class="fa-solid fa-bell"></i>';
+        break;
+      case 'weather': {
+        if (notif.icon) {
+          // 👇 icon chuẩn từ OpenWeatherMap
+          iconHtml = `<img src="https://openweathermap.org/img/wn/${notif.icon}.png"
+                          alt="weather" style="width:20px; height:20px">`;
+        } else {
+          // fallback dự phòng
+          const lower = (notif.message || '').toLowerCase();
+          if (lower.includes('mưa')) iconHtml = '<i class="fa-solid fa-cloud-showers-heavy"></i>';
+          else if (lower.includes('nắng') || lower.includes('clear')) iconHtml = '<i class="fa-solid fa-sun"></i>';
+          else if (lower.includes('mây') || lower.includes('cloud')) iconHtml = '<i class="fa-solid fa-cloud"></i>';
+          else if (lower.includes('gió') || lower.includes('wind')) iconHtml = '<i class="fa-solid fa-wind"></i>';
+          else if (lower.includes('bão') || lower.includes('storm')) iconHtml = '<i class="fa-solid fa-poo-storm"></i>';
+          else iconHtml = '<i class="fa-solid fa-temperature-half"></i>';
+        }
+        break;
+      }
+      default:
+        iconHtml = '<i class="fa-solid fa-info-circle"></i>';
+    }
+  
+    // message + thời gian
+    const msgDiv = document.createElement('div');
+    msgDiv.innerHTML = `
+      <div class="notification-mess">${iconHtml} ${notif.message}</div>
+      <small style="color:#666; font-size:12px">${timeAgo(notif.created_at)}</small>
+    `;
+  
+    // nút xoá
+    const delBtn = document.createElement('button');
+    delBtn.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+    delBtn.title = 'Xóa';
+    delBtn.style.background = 'transparent';
+    delBtn.style.border = 'none';
+    delBtn.style.cursor = 'pointer';
+    delBtn.style.color = '#999';
+    delBtn.style.fontSize = '14px';
+    delBtn.addEventListener('mouseenter', () => delBtn.style.color = '#e53935');
+    delBtn.addEventListener('mouseleave', () => delBtn.style.color = '#999');
+    delBtn.addEventListener('click', async (ev) => {
+      ev.stopPropagation();
+      await deleteNotif(notif.id);
+      li.remove();
+      const current = Number(badge.textContent) || 0;
+      const next = Math.max(0, current - 1);
+      badge.textContent = next;
+      badge.classList.toggle('hidden', next === 0);
+    });
+  
+    // checkbox read/unread
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.checked = notif.is_read;
+    checkbox.className = 'notif-checkbox';
+    checkbox.addEventListener('change', async (ev) => {
+      if (ev.target.checked) {
+        await markRead(notif.id);
+        li.classList.remove('notif-unread');
+      } else {
+        await markUnread(notif.id);
+        li.classList.add('notif-unread');
+      }
+    });
+  
+    li.appendChild(msgDiv);
+    li.appendChild(delBtn);
+    li.appendChild(checkbox);
+  
+    list.prepend(li);
+  
+    // cập nhật badge
+    const current = Number(badge.textContent) || 0;
+    badge.textContent = notif.is_read ? current : current + 1;
+    badge.classList.toggle('hidden', Number(badge.textContent) === 0);
+    // cập nhật badge hoặc render lại list
+    if (document.querySelector('#notif-dropdown')?.classList.contains('open')) {
+  // nếu đang mở dropdown thì reload toàn bộ
+  renderNotificationsFromDB();
+    } else {
+  // nếu đang đóng thì chỉ tăng số badge
+  const current = Number(badge.textContent) || 0;
+  badge.textContent = notif.is_read ? current : current + 1;
+  badge.classList.toggle('hidden', Number(badge.textContent) === 0);
+    }
+
   });
+  
   
   
 }
@@ -742,71 +843,101 @@ async function renderNotificationsFromDB() {
   badge.classList.toggle('hidden', unread === 0);
 
   notifs.forEach(n => {
-    const li = document.createElement('li');
-    li.className = n.is_read ? '' : 'notif-unread';
-  
-    // checkbox
-    const checkbox = document.createElement('input');
-    checkbox.type = 'checkbox';
-    checkbox.checked = n.is_read; // đã đọc -> tích sẵn
-    checkbox.style.marginRight = '8px';
-  
-    checkbox.addEventListener('change', async (ev) => {
-      if (ev.target.checked) {
-        // đánh dấu đã đọc
-        await markRead(n.id);
-      } else {
-        // đánh dấu chưa đọc
-        await markUnread(n.id);
-      }
-    
-      // ✅ cập nhật badge ngay lập tức
-      const current = Number(badge.textContent) || 0;
-      if (ev.target.checked) {
-        // vừa tick -> số unread giảm
-        const next = Math.max(0, current - 1);
-        badge.textContent = next;
-        badge.classList.toggle('hidden', next === 0);
-      } else {
-        // vừa bỏ tick -> số unread tăng
-        const next = current + 1;
-        badge.textContent = next;
-        badge.classList.remove('hidden');
-      }
-    
-      // Sau đó render lại toàn bộ danh sách để đồng bộ
-      await renderNotificationsFromDB();
-  });
-    
-  
-    // message
-    const span = document.createElement('span');
-    span.innerHTML = n.message;
-  
-    // nút xoá
-    const delBtn = document.createElement('button');
-    delBtn.innerHTML = '<i class="fa-solid fa-xmark"></i>';
-    delBtn.title = 'Xóa';
-    delBtn.style.background = 'transparent';
-    delBtn.style.border = 'none';
-    delBtn.style.cursor = 'pointer';
-    delBtn.style.color = '#999';
-    delBtn.style.fontSize = '14px';
-    delBtn.addEventListener('mouseenter', () => delBtn.style.color = '#e53935');
-    delBtn.addEventListener('mouseleave', () => delBtn.style.color = '#999');
-    delBtn.addEventListener('click', async (ev) => {
-      ev.stopPropagation();
-      await deleteNotif(n.id);
-      await renderNotificationsFromDB();
-    });
-  
-    li.appendChild(checkbox);
-    li.appendChild(span);
-    li.appendChild(delBtn);
-    list.appendChild(li);
+    renderSingleNotification(n); // 👈 gọi hàm chung
   });
   
 }
+
+function renderSingleNotification(n, prepend = false) {
+  const li = document.createElement('li');
+  li.className = n.is_read ? '' : 'notif-unread';
+  li.style.position = 'relative';  
+  // chọn icon (friend_request, message, system, weather...)
+  let iconHtml = '';
+  switch (n.type) {
+    case 'friend_request': iconHtml = '<i class="fa-solid fa-user-plus"></i>'; break;
+    case 'message':        iconHtml = '<i class="fa-solid fa-envelope"></i>'; break;
+    case 'system':         iconHtml = '<i class="fa-solid fa-bell"></i>'; break;
+    case 'weather': {
+      if (n.icon) {
+        iconHtml = `<img src="https://openweathermap.org/img/wn/${n.icon}.png"
+                          alt="weather" style="width:20px; height:20px">`;
+      } else {
+        const msg = (n.message || '').toLowerCase();
+        if (msg.includes('mưa')) iconHtml = '<i class="fa-solid fa-cloud-showers-heavy"></i>';
+        else if (msg.includes('nắng') || msg.includes('clear')) iconHtml = '<i class="fa-solid fa-sun"></i>';
+        else if (msg.includes('mây') || msg.includes('cloud')) iconHtml = '<i class="fa-solid fa-cloud"></i>';
+        else if (msg.includes('gió') || msg.includes('wind')) iconHtml = '<i class="fa-solid fa-wind"></i>';
+        else if (msg.includes('bão') || msg.includes('storm')) iconHtml = '<i class="fa-solid fa-poo-storm"></i>';
+        else iconHtml = '<i class="fa-solid fa-temperature-half"></i>';
+      }
+      break;
+    }
+    default: iconHtml = '<i class="fa-solid fa-info-circle"></i>';
+  }
+
+  // message + thời gian
+  const msgDiv = document.createElement('div');
+  msgDiv.innerHTML = `
+    <div class="notification-mess">${iconHtml} ${n.message}</div>
+    <small style="color:#666; font-size:12px">${timeAgo(n.created_at)}</small>
+  `;
+
+  // nút xoá
+  const delBtn = document.createElement('button');
+  delBtn.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+  delBtn.title = 'Xóa';
+  delBtn.className = 'notif-del-btn';
+  delBtn.addEventListener('click', async (ev) => {
+    ev.stopPropagation();
+    await deleteNotif(n.id);
+    li.remove();
+    const current = Number(badge.textContent) || 0;
+    const next = Math.max(0, current - 1);
+    badge.textContent = next;
+    badge.classList.toggle('hidden', next === 0);
+  });
+
+  // checkbox
+  const checkbox = document.createElement('input');
+  checkbox.type = 'checkbox';
+  checkbox.checked = n.is_read;
+  checkbox.className = 'notif-checkbox';
+  checkbox.addEventListener('change', async (ev) => {
+    if (ev.target.checked) {
+      await markRead(n.id);
+      li.classList.remove('notif-unread');
+      const current = Number(badge.textContent) || 0;
+      const next = Math.max(0, current - 1);
+      badge.textContent = next;
+      badge.classList.toggle('hidden', next === 0);
+    } else {
+      await markUnread(n.id);
+      li.classList.add('notif-unread');
+      const current = Number(badge.textContent) || 0;
+      badge.textContent = current + 1;
+      badge.classList.remove('hidden');
+    }
+  });
+
+  li.appendChild(msgDiv);
+  li.appendChild(delBtn);
+  li.appendChild(checkbox);
+
+  if (prepend) {
+    list.prepend(li);
+  } else {
+    list.appendChild(li);
+  }
+
+  // nếu là realtime + chưa đọc thì tăng badge
+  if (prepend && !n.is_read) {
+    const current = Number(badge.textContent) || 0;
+    badge.textContent = current + 1;
+    badge.classList.remove('hidden');
+  }
+}
+
 
 // Toggle popup: mở là tải + mark all read
 bell.addEventListener('click', async () => {
@@ -814,18 +945,11 @@ bell.addEventListener('click', async () => {
   popup.classList.toggle('hidden');
 
   if (popup.classList.contains('show')) {
-    // render lần 1 để thấy danh sách ngay
+    // chỉ load lại danh sách thôi, KHÔNG mark all read
     await renderNotificationsFromDB();
-
-    // mark tất cả thông báo chưa đọc
-    const notifs = await fetchNotifications();
-    const unreadIds = notifs.filter(n => !n.is_read).map(n => n.id);
-    if (unreadIds.length) {
-      await Promise.all(unreadIds.map(id => markRead(id)));
-      await renderNotificationsFromDB();
-    }
   }
 });
+
 
 // Click outside để đóng popup
 document.addEventListener('mousedown', (e) => {
@@ -834,6 +958,28 @@ document.addEventListener('mousedown', (e) => {
     popup.classList.add('hidden');
   }
 });
+// Hàm tính khoảng thời gian so với hiện tại (giờ Việt Nam)
+function timeAgo(dateStr) {
+  // parse UTC từ DB
+  const utcDate = new Date(dateStr);
+
+  // cộng thêm 7 giờ để thành giờ VN
+  const vnDate = new Date(utcDate.getTime() + 7 * 60 * 60 * 1000);
+
+  const now = new Date();
+  const diffMs = now - vnDate;
+
+  const seconds = Math.floor(diffMs / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+
+  if (seconds < 60) return 'vừa xong';
+  if (minutes < 60) return `${minutes} phút trước`;
+  if (hours < 24) return `${hours} giờ trước`;
+  return `${days} ngày trước`;
+}
+
 
 // Load ban đầu
 document.addEventListener('DOMContentLoaded', () => {

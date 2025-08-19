@@ -1261,6 +1261,8 @@ box-shadow: 0 0 4px rgba(0,0,0,0.3);
   width: 250px;
   max-height: 300px;
   overflow-y: auto;
+  scrollbar-width: thin;   /* Firefox */
+  scrollbar-color: #1ddee4 rgb(223, 218, 218, 0.9); 
   background: rgb(223, 218, 218, 0.9);
   border-radius: 10px;
   box-shadow: 0 6px 20px rgba(0,0,0,0.2);
@@ -1271,6 +1273,25 @@ box-shadow: 0 0 4px rgba(0,0,0,0.3);
   transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
+/* Chrome, Edge, Safari */
+.notification-popup::-webkit-scrollbar {
+  width: 8px;
+}
+
+.notification-popup::-webkit-scrollbar-track {
+  background: #f1f1f1;   /* nền track */
+  border-radius: 8px;
+}
+
+.notification-popup::-webkit-scrollbar-thumb {
+  background-color: #b6dfb8; /* màu thanh cuộn */
+  border-radius: 8px;
+  border: 2px solid #f1f1f1; /* tạo viền trắng cho thanh */
+}
+
+.notification-popup::-webkit-scrollbar-thumb:hover {
+  background-color: #388e3c; /* đậm hơn khi hover */
+}
 .notification-popup.show {
   opacity: 1;
   transform: translateY(0);
@@ -1304,59 +1325,112 @@ box-shadow: 0 0 4px rgba(0,0,0,0.3);
   margin: 0;
   padding: 0;
 }
-
+#notification-list li:hover{
+  background-color: #b7b7b7;
+}
 #notification-list li {
   display: flex;
   align-items: center;
-  gap: 8px;                 /* khoảng cách giữa icon và text */
   padding: 8px 10px;
   border-bottom: 1px solid #eee;
+  gap: 8px;
+}
+
+#notification-list li:last-child {
+  border-bottom: none;
+}
+
+/* chưa đọc */
+#notification-list li.notif-unread {
+  background: #f9f9ff;
+}
+
+/* msgDiv chiếm phần còn lại */
+#notification-list li > div {
+  flex: 1;
+  min-width: 0; /* tránh tràn */
+  display: flex;
+  flex-direction: column;
+}
+
+/* icon + message cùng hàng */
+.notification-mess {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   font-size: 14px;
-  line-height: 1.4;
+  color: #333;
 }
 
-#notification-list li i {
-  color: #4caf50;           /* màu xanh lá cho icon */
-  font-size: 16px;
-  min-width: 18px;          /* để icon thẳng hàng */
-  text-align: center;
-}
-
-#notification-list li:hover {
-  background: #f9f9f9;
-}
-
-/* Nút xóa thông báo */
+/* nút x */
 #notification-list li button {
-  margin-left: auto;
-  background: none;
-  border: none;
-  color: #999;
+  flex-shrink: 0; /* không bị co */
+  margin-left: 8px;
+}
+
+
+
+/* Ẩn checkbox mặc định */
+#notification-list li input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  width: 18px;
+  height: 18px;
+  border: 2px solid #999;
+  border-radius: 50%; /* làm tròn */
+  display: inline-block;
+  position: relative;
   cursor: pointer;
+  outline: none;
+  transition: border-color 0.2s, background-color 0.2s;
+}
+
+/* Khi hover */
+#notification-list li input[type="checkbox"]:hover {
+  border-color: #4caf50;
+}
+
+/* Khi được check */
+#notification-list li input[type="checkbox"]:checked {
+  background-color: transparent;
+  color: greenyellow;
+  border-color: #4caf50;
+}
+
+/* Dấu tích */
+#notification-list li input[type="checkbox"]:checked::before {
+  content: "";
+  position: absolute;
+  top: -3px;
+  left: 6px;
+  width: 6px;
+  height: 14px;
+  border: solid #1bca4c;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.notif-del-btn {
+  position: absolute;
+  top: 2px;
+  right: 10px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #999;
   font-size: 14px;
-  transition: color 0.2s;
+  margin-bottom: 10px;
 }
 
-#notification-list li button:hover {
-  color: #e53935;           /* đỏ khi hover */
+.notif-del-btn:hover {
+  color: #e53935;
 }
 
-/* tên user trong thông báo */
-#notification-list .notif-username {
-  color: #1e88e5 !important;
-  font-weight: 700 !important;
-}
 
-/* chỗ hiển thị thông báo chưa đọc */
-.notification-popup li.notif-unread {
-  background: linear-gradient(90deg, rgba(30,136,229,0.06), rgba(255,255,255,0));
-  border-left: 3px solid #1e88e5;
-}
 
-/* sửa layout nút xóa / control */
-.notification-popup li > span {
-  float: right;
-}
 
-/* optional: giảm margin giữa icon và text */
-.notification-popup li i.fa-user-plus { margin-right: 6px; }
+
+
+
+
