@@ -1,14 +1,16 @@
 const pool = require('../db');
 
 // Tạo thông báo (dùng nội bộ hoặc cho API admin)
-exports.createNotification = async (userId, senderId, type, message) => {
+// Tạo thông báo (dùng nội bộ hoặc cho API admin)
+exports.createNotification = async (userId, senderId, type, message, icon = null) => {
   const { rows } = await pool.query(
-    `INSERT INTO notifications (user_id, sender_id, type, message)
-     VALUES ($1, $2, $3, $4) RETURNING *`,
-    [userId, senderId, type, message]
+    `INSERT INTO notifications (user_id, sender_id, type, message, icon)
+     VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+    [userId, senderId, type, message, icon]
   );
   return rows[0];
 };
+
 
 // Lấy danh sách thông báo của user
 exports.getNotifications = async (req, res) => {

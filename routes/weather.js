@@ -1,12 +1,11 @@
 // routes/weather.js
 const express = require('express');
 const router = express.Router();
+const fetchWeather = require('../utils/weather');
 
-router.get('/today', (req, res) => {
-  const todayWeather = {
-    summary: "Nắng đẹp, có mây nhẹ",
-    temp: 31,
-  };
+router.get('/today', async (req, res) => {
+  const todayWeather = await fetchWeather();
+  if (!todayWeather) return res.status(500).json({ error: 'Không lấy được thời tiết' });
   res.json(todayWeather);
 });
 

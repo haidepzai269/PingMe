@@ -66,7 +66,7 @@ function socketHandler(io) {
         );
         const senderName = senderRes.rows[0]?.username || 'Người dùng';
     
-        const message = `<i class="fa-solid fa-user-plus"></i> ${senderName} đã gửi lời mời kết bạn`;
+        const message = `${senderName} đã gửi lời mời kết bạn`;
     
         // 1. Tạo thông báo trong DB
         const { rows } = await pool.query(

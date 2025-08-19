@@ -65,6 +65,52 @@ app.use('/api/groups', (req, res, next) => {
 
 // Start socket handlers
 socketHandler(io);
+// ===== Cron job gửi thông báo thời tiết lúc 7h sáng =====
+const cron = require('node-cron');
+const pool = require('./db');
+const { createNotification } = require('./controllers/notification.controller');
+const fetchWeather = require('./utils/weather'); // bạn cần export hàm lấy thời tiết từ weather.js
+
+// cron.schedule('0 14 * * *', async () => {
+//   try {
+//     console.log('⏰ Chạy cron job thời tiết 14h...');
+//     const { rows: users } = await pool.query('SELECT id FROM users');
+//     const weatherInfo = await fetchWeather();
+//     const message = ` Thời tiết hôm nay: ${weatherInfo}`;
+
+//     for (const u of users) {
+//       const notif = await createNotification(u.id, null, 'weather', message);
+//       io.to(String(u.id)).emit('notification:new', notif);
+//     }
+
+//     console.log(`✅ Đã gửi thông báo thời tiết cho ${users.length} user`);
+//   } catch (err) {
+//     console.error('❌ Lỗi cron job thời tiết:', err);
+//   }
+// }, {
+//   timezone: 'Asia/Ho_Chi_Minh'
+// });
+cron.schedule('* 9 * * *', async () => {
+  try {
+    console.log('⏰ Chạy cron job thời tiết 19h...');
+    const { rows: users } = await pool.query('SELECT id FROM users');
+    const { description, temp, icon } = await fetchWeather();
+    const message = `Thời tiết hôm nay: ${description}, ${temp}°C`;
+    
+    for (const u of users) {
+      const notif = await createNotification(u.id, null, 'weather', message, icon);
+      io.to(String(u.id)).emit('notification:new', notif);
+    }
+    
+
+    console.log(`✅ Đã gửi thông báo thời tiết cho ${users.length} user`);
+  } catch (err) {
+    console.error('❌ Lỗi cron job thời tiết:', err);
+  }
+}, {
+  timezone: 'Asia/Ho_Chi_Minh'
+});
+
 
 // ===== Start server =====
 const PORT = process.env.PORT || 3000;
