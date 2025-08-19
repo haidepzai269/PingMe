@@ -1331,7 +1331,7 @@ box-shadow: 0 0 4px rgba(0,0,0,0.3);
 #notification-list li {
   display: flex;
   align-items: center;
-  padding: 8px 10px;
+  padding: 3px 4px;
   border-bottom: 1px solid #eee;
   gap: 8px;
 }

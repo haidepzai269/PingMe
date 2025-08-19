@@ -507,17 +507,6 @@ function initSocket() {
     const current = Number(badge.textContent) || 0;
     badge.textContent = notif.is_read ? current : current + 1;
     badge.classList.toggle('hidden', Number(badge.textContent) === 0);
-    // cập nhật badge hoặc render lại list
-    if (document.querySelector('#notif-dropdown')?.classList.contains('open')) {
-  // nếu đang mở dropdown thì reload toàn bộ
-  renderNotificationsFromDB();
-    } else {
-  // nếu đang đóng thì chỉ tăng số badge
-  const current = Number(badge.textContent) || 0;
-  badge.textContent = notif.is_read ? current : current + 1;
-  badge.classList.toggle('hidden', Number(badge.textContent) === 0);
-    }
-
   });
   
   
@@ -843,99 +832,117 @@ async function renderNotificationsFromDB() {
   badge.classList.toggle('hidden', unread === 0);
 
   notifs.forEach(n => {
-    renderSingleNotification(n); // 👈 gọi hàm chung
-  });
+    const li = document.createElement('li');
+    li.className = n.is_read ? '' : 'notif-unread';
   
-}
-
-function renderSingleNotification(n, prepend = false) {
-  const li = document.createElement('li');
-  li.className = n.is_read ? '' : 'notif-unread';
-  li.style.position = 'relative';  
-  // chọn icon (friend_request, message, system, weather...)
-  let iconHtml = '';
-  switch (n.type) {
-    case 'friend_request': iconHtml = '<i class="fa-solid fa-user-plus"></i>'; break;
-    case 'message':        iconHtml = '<i class="fa-solid fa-envelope"></i>'; break;
-    case 'system':         iconHtml = '<i class="fa-solid fa-bell"></i>'; break;
-    case 'weather': {
-      if (n.icon) {
-        iconHtml = `<img src="https://openweathermap.org/img/wn/${n.icon}.png"
-                          alt="weather" style="width:20px; height:20px">`;
+    // checkbox
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.checked = n.is_read;
+    checkbox.style.marginRight = '8px';
+  
+    checkbox.addEventListener('change', async (ev) => {
+      if (ev.target.checked) {
+        await markRead(n.id);
       } else {
-        const msg = (n.message || '').toLowerCase();
-        if (msg.includes('mưa')) iconHtml = '<i class="fa-solid fa-cloud-showers-heavy"></i>';
-        else if (msg.includes('nắng') || msg.includes('clear')) iconHtml = '<i class="fa-solid fa-sun"></i>';
-        else if (msg.includes('mây') || msg.includes('cloud')) iconHtml = '<i class="fa-solid fa-cloud"></i>';
-        else if (msg.includes('gió') || msg.includes('wind')) iconHtml = '<i class="fa-solid fa-wind"></i>';
-        else if (msg.includes('bão') || msg.includes('storm')) iconHtml = '<i class="fa-solid fa-poo-storm"></i>';
-        else iconHtml = '<i class="fa-solid fa-temperature-half"></i>';
+        await markUnread(n.id);
+      }
+    
+      // cập nhật badge ngay
+      const current = Number(badge.textContent) || 0;
+      if (ev.target.checked) {
+        const next = Math.max(0, current - 1);
+        badge.textContent = next;
+        badge.classList.toggle('hidden', next === 0);
+      } else {
+        const next = current + 1;
+        badge.textContent = next;
+        badge.classList.remove('hidden');
+      }
+    
+      await renderNotificationsFromDB();
+    });
+    
+    // chọn icon theo type
+    // chọn icon theo type
+      let iconHtml = '';
+      switch (n.type) {
+  case 'friend_request':
+    iconHtml = '<i class="fa-solid fa-user-plus"></i>';
+    break;
+  case 'message':
+    iconHtml = '<i class="fa-solid fa-envelope"></i>';
+    break;
+  case 'system':
+    iconHtml = '<i class="fa-solid fa-bell"></i>';
+    break;
+    case 'weather': {
+      try {
+        if (n.icon) {
+          // icon chính thức từ OpenWeatherMap
+          iconHtml = `<img src="https://openweathermap.org/img/wn/${n.icon}.png"
+                           alt="weather" style="width:20px; height:20px">`;
+        } else {
+          // fallback nếu không có icon
+          const msg = (n.message || '').toLowerCase();
+          if (msg.includes('mưa')) {
+            iconHtml = '<i class="fa-solid fa-cloud-showers-heavy"></i>';
+          } else if (msg.includes('nắng') || msg.includes('clear')) {
+            iconHtml = '<i class="fa-solid fa-sun"></i>';
+          } else if (msg.includes('mây') || msg.includes('cloud')) {
+            iconHtml = '<i class="fa-solid fa-cloud"></i>';
+          } else if (msg.includes('gió') || msg.includes('wind')) {
+            iconHtml = '<i class="fa-solid fa-wind"></i>';
+          } else if (msg.includes('bão') || msg.includes('storm')) {
+            iconHtml = '<i class="fa-solid fa-poo-storm"></i>';
+          } else {
+            iconHtml = '<i class="fa-solid fa-temperature-half"></i>';
+          }
+        }
+      } catch (e) {
+        console.error('weather icon render error', e);
+        iconHtml = '<i class="fa-solid fa-temperature-half"></i>';
       }
       break;
     }
-    default: iconHtml = '<i class="fa-solid fa-info-circle"></i>';
-  }
+    
+  default:
+    iconHtml = '<i class="fa-solid fa-info-circle"></i>';
+      }
 
-  // message + thời gian
-  const msgDiv = document.createElement('div');
-  msgDiv.innerHTML = `
-    <div class="notification-mess">${iconHtml} ${n.message}</div>
-    <small style="color:#666; font-size:12px">${timeAgo(n.created_at)}</small>
-  `;
-
-  // nút xoá
-  const delBtn = document.createElement('button');
-  delBtn.innerHTML = '<i class="fa-solid fa-xmark"></i>';
-  delBtn.title = 'Xóa';
-  delBtn.className = 'notif-del-btn';
-  delBtn.addEventListener('click', async (ev) => {
-    ev.stopPropagation();
-    await deleteNotif(n.id);
-    li.remove();
-    const current = Number(badge.textContent) || 0;
-    const next = Math.max(0, current - 1);
-    badge.textContent = next;
-    badge.classList.toggle('hidden', next === 0);
-  });
-
-  // checkbox
-  const checkbox = document.createElement('input');
-  checkbox.type = 'checkbox';
-  checkbox.checked = n.is_read;
-  checkbox.className = 'notif-checkbox';
-  checkbox.addEventListener('change', async (ev) => {
-    if (ev.target.checked) {
-      await markRead(n.id);
-      li.classList.remove('notif-unread');
-      const current = Number(badge.textContent) || 0;
-      const next = Math.max(0, current - 1);
-      badge.textContent = next;
-      badge.classList.toggle('hidden', next === 0);
-    } else {
-      await markUnread(n.id);
-      li.classList.add('notif-unread');
-      const current = Number(badge.textContent) || 0;
-      badge.textContent = current + 1;
-      badge.classList.remove('hidden');
-    }
-  });
-
-  li.appendChild(msgDiv);
-  li.appendChild(delBtn);
-  li.appendChild(checkbox);
-
-  if (prepend) {
-    list.prepend(li);
-  } else {
+    
+    
+  
+    // message + thời gian
+    const msgDiv = document.createElement('div');
+    msgDiv.innerHTML = `
+      <div class="notification-mess">${iconHtml} ${n.message}</div>
+      <small style="color:#666; font-size:12px">${timeAgo(n.created_at)}</small>
+    `;
+  
+    // nút xoá
+    const delBtn = document.createElement('button');
+    delBtn.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+    delBtn.title = 'Xóa';
+    delBtn.style.background = 'transparent';
+    delBtn.style.border = 'none';
+    delBtn.style.cursor = 'pointer';
+    delBtn.style.color = '#999';
+    delBtn.style.fontSize = '14px';
+    delBtn.addEventListener('mouseenter', () => delBtn.style.color = '#e53935');
+    delBtn.addEventListener('mouseleave', () => delBtn.style.color = '#999');
+    delBtn.addEventListener('click', async (ev) => {
+      ev.stopPropagation();
+      await deleteNotif(n.id);
+      await renderNotificationsFromDB();
+    });
+  
+    li.appendChild(checkbox);
+    li.appendChild(msgDiv);
+    li.appendChild(delBtn);
     list.appendChild(li);
-  }
-
-  // nếu là realtime + chưa đọc thì tăng badge
-  if (prepend && !n.is_read) {
-    const current = Number(badge.textContent) || 0;
-    badge.textContent = current + 1;
-    badge.classList.remove('hidden');
-  }
+  });
+  
 }
 
 
@@ -945,11 +952,18 @@ bell.addEventListener('click', async () => {
   popup.classList.toggle('hidden');
 
   if (popup.classList.contains('show')) {
-    // chỉ load lại danh sách thôi, KHÔNG mark all read
+    // render lần 1 để thấy danh sách ngay
     await renderNotificationsFromDB();
+
+    // mark tất cả thông báo chưa đọc
+    const notifs = await fetchNotifications();
+    const unreadIds = notifs.filter(n => !n.is_read).map(n => n.id);
+    if (unreadIds.length) {
+      await Promise.all(unreadIds.map(id => markRead(id)));
+      await renderNotificationsFromDB();
+    }
   }
 });
-
 
 // Click outside để đóng popup
 document.addEventListener('mousedown', (e) => {
