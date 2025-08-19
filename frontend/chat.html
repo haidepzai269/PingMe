@@ -244,10 +244,28 @@ z-index:999;
 </div>
 
 <div id="toast-container"></div>
-
+<div id="unsupported-message" class="hidden">
+  <h2>Xin lỗi , trang không hoạt động</h2>
+  <p>Thiết bị của bạn có màn hình quá nhỏ để sử dụng trang web này.</p>
+</div>
 
 
   <script type="module" src="chat-group.js"></script>
   <script type="module"  src="chat.js"></script>
+  <script>
+    function checkScreenSize() {
+      const warning = document.getElementById("unsupported-message");
+      if (window.innerWidth < 400) {
+        warning.classList.remove("hidden");
+        document.body.style.overflow = "hidden";
+      } else {
+        warning.classList.add("hidden");
+        document.body.style.overflow = "";
+      }
+    }
+  
+    window.addEventListener("resize", checkScreenSize);
+    window.addEventListener("DOMContentLoaded", checkScreenSize);
+  </script>
 </body>
 </html>

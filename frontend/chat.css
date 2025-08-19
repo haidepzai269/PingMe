@@ -491,7 +491,7 @@
     width: 100%;
     height: 60px;
   }
-
+   
   .chat-list {
     width: 100%;
     border-right: none;
@@ -499,7 +499,6 @@
     height: auto;
     padding: 10px;
   }
-
   .chat-main {
     margin: 0;
     border-radius: 0;
@@ -537,6 +536,10 @@
 
   .chat-main {
     margin-top: 0;
+  }
+  #group-list{
+    display: none;
+
   }
 }
 .avatar-status {
@@ -1930,4 +1933,56 @@
 /* Hiện tooltip khi hover message */
 .message:hover .msg-time-tooltip {
   display: inline-block;
+}
+
+
+@media (max-width: 768px) {
+  /* Ẩn chat-list */
+  .chat-list {
+    display: none !important;
+  }
+
+  /* Container dọc: sidebar trên, chat-main dưới */
+  .chat-container {
+    flex-direction: column;
+  }
+
+  /* Sidebar ngang trên cùng */
+  .sidebar {
+    flex-direction: row;
+    justify-content: space-around;
+    align-items: center;
+    width: 100%;
+    height: 60px; /* chiều cao hợp lý cho mobile */
+    padding: 5px 0;
+    border-radius: 0;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  }
+
+  /* Khung chat chiếm hết dưới */
+  .chat-main {
+    flex: 1 !important;
+    width: 100% !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+  }
+}
+#unsupported-message {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: white;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+  text-align: center;
+  padding: 20px;
+}
+
+.hidden {
+  display: none !important;
 }
