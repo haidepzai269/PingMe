@@ -974,31 +974,37 @@ document.addEventListener('mousedown', (e) => {
 });
 // Hàm tính khoảng thời gian so với hiện tại (giờ Việt Nam)
 function timeAgo(dateStr) {
-  // parse UTC từ DB
-  const utcDate = new Date(dateStr);
-
-  // cộng thêm 7 giờ để thành giờ VN
-  const vnDate = new Date(utcDate.getTime() + 7 * 60 * 60 * 1000);
-
+  if (!dateStr) return '';
+  
+  
+  // Nếu thiếu Z (UTC marker) thì thêm vào để tránh bị coi là local time
+  let parsedDate = dateStr.endsWith('Z') ? new Date(dateStr) : new Date(dateStr + 'Z');
+  
+  
+  if (isNaN(parsedDate.getTime())) {
+  // fallback: thử parse bình thường
+  parsedDate = new Date(dateStr);
+  }
+  
+  
   const now = new Date();
-  const diffMs = now - vnDate;
-
+  const diffMs = now - parsedDate;
+  
+  
   const seconds = Math.floor(diffMs / 1000);
   const minutes = Math.floor(seconds / 60);
   const hours = Math.floor(minutes / 60);
   const days = Math.floor(hours / 24);
-
+  
+  
   if (seconds < 60) return 'vừa xong';
   if (minutes < 60) return `${minutes} phút trước`;
   if (hours < 24) return `${hours} giờ trước`;
   return `${days} ngày trước`;
-}
-
-
-// Load ban đầu
-document.addEventListener('DOMContentLoaded', () => {
+  }
+  
+  
+  // Load ban đầu
+  document.addEventListener('DOMContentLoaded', () => {
   renderNotificationsFromDB();
-});
-
-
-
+  });
