@@ -1458,7 +1458,7 @@ box-shadow: 0 0 4px rgba(0,0,0,0.3);
   #search-wrapper {
     position: sticky;
     top: 0;
-    background: #fff;
+    background: transparent;
     z-index: 2;
     padding-bottom: 8px;
   }
@@ -1497,7 +1497,21 @@ box-shadow: 0 0 4px rgba(0,0,0,0.3);
     overflow-y: auto; /* chỉ main-section cuộn */
     -webkit-overflow-scrolling: touch; /* mượt trên mobile */
   }
-  
+  #search-wrapper {
+    display: flex;
+    justify-content: center; /* căn giữa */
+    padding: 0 10px; /* tạo khoảng cách 2 bên */
+  }
+
+  #search-wrapper input {
+    width: 100%;
+    max-width: 500px; /* giới hạn cho đẹp trên tablet */
+    border-radius: 20px;
+    padding: 8px 14px;
+    box-sizing: border-box;
+  }
+
+
 }
 
 

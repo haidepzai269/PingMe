@@ -3,6 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <title>Đăng nhập / Đăng ký</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <link rel="stylesheet" href="auth.css" />
 </head>
 <body>
@@ -17,6 +19,15 @@
         <input type="password" id="password" placeholder="Mật khẩu" />
         
         <button id="auth-btn">Đăng nhập</button>
+
+
+        <div class="social-login">
+
+          <button onclick="window.location.href='/api/auth/google'" class="social-btn google">
+            <i class="fab fa-google"></i> Đăng nhập với Google
+          </button>
+        </div>
+      
         <p id="toggle-auth">Chưa có tài khoản? <a href="#" id="toggle-link">Đăng ký</a></p>
         <p id="forgot-password"><a href="forgot.html">Bạn quên mật khẩu ✓</a></p>
         <p id="auth-message"></p>

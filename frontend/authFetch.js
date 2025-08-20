@@ -1,3 +1,19 @@
+// ==== Check token in URL (for Google/Facebook login) ====
+const params = new URLSearchParams(window.location.search);
+const accessTokenFromURL = params.get("accessToken");
+const refreshTokenFromURL = params.get("refreshToken");
+
+if (accessTokenFromURL && refreshTokenFromURL) {
+  localStorage.setItem("accessToken", accessTokenFromURL);
+  localStorage.setItem("refreshToken", refreshTokenFromURL);
+
+  // Xóa query khỏi URL để không lộ token
+  window.history.replaceState({}, document.title, window.location.pathname);
+}
+
+
+
+
 export async function authFetch(url, options = {}) {
   let token = localStorage.getItem('accessToken'); // ✅ sửa lại
   if (!token) {
