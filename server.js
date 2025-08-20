@@ -5,6 +5,11 @@ const path = require('path');
 const http = require('http');
 const { Server } = require('socket.io');
 const socketHandler = require('./socket'); // backend/socket/index.js
+const passport = require("passport");
+const GoogleStrategy = require("passport-google-oauth20").Strategy;
+const FacebookStrategy = require("passport-facebook").Strategy;
+const jwt = require("jsonwebtoken");
+
 
 const app = express();
 app.use(cors());
@@ -110,7 +115,100 @@ cron.schedule('* 7 * * *', async () => {
 }, {
   timezone: 'Asia/Ho_Chi_Minh'
 });
+// đăng nhập bằng fb & gg
+// Serialize / Deserialize user (ở đây chỉ cần pass object, không dùng session DB)
+passport.serializeUser((user, done) => done(null, user));
+passport.deserializeUser((obj, done) => done(null, obj));
 
+// === GOOGLE ===
+passport.use(new GoogleStrategy({
+  clientID: process.env.GOOGLE_CLIENT_ID,
+  clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+  callbackURL: process.env.GOOGLE_CALLBACK_URL
+}, async (accessToken, refreshToken, profile, done) => {
+  try {
+    const email = profile.emails?.[0]?.value;
+    const username = profile.displayName || email;
+    const avatar = profile.photos?.[0]?.value || null;
+
+    // Tìm user theo email
+    let result = await pool.query("SELECT * FROM users WHERE email=$1", [email]);
+
+    let user;
+    if (result.rows.length === 0) {
+      // Nếu chưa có -> tạo mới
+      const insert = await pool.query(
+        "INSERT INTO users (username, password, email, avatar) VALUES ($1,$2,$3,$4) RETURNING *",
+        [username, "", email, avatar]
+      );
+      user = insert.rows[0];
+    } else {
+      user = result.rows[0];
+    }
+
+    return done(null, user);
+  } catch (err) {
+    return done(err, null);
+  }
+}));
+
+// === FACEBOOK ===
+// passport.use(new FacebookStrategy({
+//   clientID: process.env.FACEBOOK_APP_ID,
+//   clientSecret: process.env.FACEBOOK_APP_SECRET,
+//   callbackURL: "http://localhost:3000/api/auth/facebook/callback",
+//   profileFields: ["id", "emails", "displayName", "photos"]
+// }, async (accessToken, refreshToken, profile, done) => {
+//   try {
+//     const email = profile.emails?.[0]?.value || `${profile.id}@facebook.com`;
+//     const username = profile.displayName || email;
+//     const avatar = profile.photos?.[0]?.value || null;
+
+//     let result = await pool.query("SELECT * FROM users WHERE email=$1", [email]);
+
+//     let user;
+//     if (result.rows.length === 0) {
+//       const insert = await pool.query(
+//         "INSERT INTO users (username, password, email, avatar) VALUES ($1,$2,$3,$4) RETURNING *",
+//         [username, "", email, avatar]
+//       );
+//       user = insert.rows[0];
+//     } else {
+//       user = result.rows[0];
+//     }
+
+//     return done(null, user);
+//   } catch (err) {
+//     return done(err, null);
+//   }
+// }));
+
+app.use(passport.initialize());
+
+// ===== Routes OAuth =====
+app.get("/api/auth/google", passport.authenticate("google", { scope: ["profile", "email"] }));
+app.get("/api/auth/google/callback",
+  passport.authenticate("google", { session: false, failureRedirect: "/?error=google" }),
+  (req, res) => {
+    // Tạo JWT từ user
+    const accessToken = jwt.sign({ id: req.user.id }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: "15m" });
+    const refreshToken = jwt.sign({ id: req.user.id }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: "7d" });
+
+    // Trả về frontend (ở đây redirect kèm token query)
+    res.redirect(`/home.html?accessToken=${accessToken}&refreshToken=${refreshToken}`);
+  }
+);
+
+app.get("/api/auth/facebook", passport.authenticate("facebook", { scope: ["email"] }));
+app.get("/api/auth/facebook/callback",
+  passport.authenticate("facebook", { session: false, failureRedirect: "/?error=facebook" }),
+  (req, res) => {
+    const accessToken = jwt.sign({ id: req.user.id }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: "15m" });
+    const refreshToken = jwt.sign({ id: req.user.id }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: "7d" });
+
+    res.redirect(`/home.html?accessToken=${accessToken}&refreshToken=${refreshToken}`);
+  }
+);
 
 // ===== Start server =====
 const PORT = process.env.PORT || 3000;
