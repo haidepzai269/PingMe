@@ -594,20 +594,26 @@ document.getElementById('delete-chat-btn').addEventListener('click', () => {
       // Sự kiện bấm nút nhắn tin
       // Sự kiện bấm nút nhắn tin
       listEl.addEventListener('click', async (e) => {
-  if (e.target.classList.contains('msg-btn')) {
-    const id = e.target.dataset.id;
+        if (e.target.classList.contains('msg-btn')) {
+          const id = e.target.dataset.id;
+      
+          // Reset badge
+          unreadCounts.set(id, 0);
+          updateUnreadBadge(id);
+          await authFetch(`/api/messages/${id}/seen_all`, { method: 'PUT' });
+      
+          // Trong handler click của '#user-suggestions' khi bấm .msg-btn
+          if (window.innerWidth < 768) {
+  // ✅ Mobile: chuyển hẳn sang URL có user để vào đúng khung chat
+  window.location.href = `chat.html?user=${id}`;
+          } else {
+  // Desktop giữ nguyên
+  window.location.href = `chat.html?user=${id}`;
+          }
 
-    // Reset badge trên frontend ngay lập tức
-    unreadCounts.set(id, 0);
-    updateUnreadBadge(id);
-
-    // Gọi API mark tất cả tin nhắn đã xem
-    await authFetch(`/api/messages/${id}/seen_all`, { method: 'PUT' });
-
-    // Chuyển sang trang chat
-    window.location.href = `chat.html?user=${id}`;
-  }
+        }
       });
+      
 
 
     } catch (err) {
@@ -1454,6 +1460,15 @@ socket.on('rtc:candidate', async ({ candidate }) => {
   }
 });
 
+function openCallModal() {
+  document.getElementById("call-modal").classList.add("active");
+}
+
+function closeCallModal() {
+  document.getElementById("call-modal").classList.remove("active");
+}
+
+
 function cleanupCall() {
   console.log("🧹 cleanupCall");
   callModal.style.display = 'none';
@@ -1518,3 +1533,66 @@ document.getElementById('cancel-reply').addEventListener('click', () => {
   loadConversation();
 
 });
+
+// Responsive mobile
+function checkMobileView() {
+  const isMobile = window.innerWidth < 768;
+  document.body.classList.toggle('mobile-view', isMobile);
+
+  if (isMobile) {
+    const hasUser = new URLSearchParams(location.search).has('user') 
+                 || new URLSearchParams(location.search).has('userId');
+    if (hasUser) {
+      document.body.classList.add('show-chat');
+      document.body.classList.remove('show-list');
+    } else {
+      document.body.classList.add('show-list');
+      document.body.classList.remove('show-chat');
+    }
+  } else {
+    document.body.classList.remove('show-list', 'show-chat');
+  }
+}
+window.addEventListener("resize", checkMobileView);
+checkMobileView();
+
+
+// Xử lý nút back
+document.addEventListener("click", (e) => {
+  if (e.target.closest(".back-btn")) {
+    document.body.classList.remove("show-chat");
+    document.body.classList.add("show-list");
+  }
+});
+
+// Khi bấm nút nhắn tin trong chat-list
+document.getElementById("user-suggestions").addEventListener("click", (e) => {
+  if (e.target.classList.contains("msg-btn")) {
+    if (document.body.classList.contains("mobile-view")) {
+      document.body.classList.remove("show-list");
+      document.body.classList.add("show-chat");
+    }
+  }
+});
+
+
+// 📱 Mobile: click "fa-comments" để về chat-list (không reload)
+const navCommentsBtn = document.getElementById('nav-comments');
+if (navCommentsBtn) {
+  navCommentsBtn.addEventListener('click', (e) => {
+    if (window.innerWidth < 768) {
+      e.preventDefault();
+      e.stopPropagation();
+      document.body.classList.remove('show-chat');
+      document.body.classList.add('show-list');
+    } else {
+      // Desktop: tuỳ bạn, có thể giữ nguyên chuyển về trang chat
+      window.location.href = 'chat.html';
+    }
+  });
+}
+
+
+
+
+

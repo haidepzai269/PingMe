@@ -18,7 +18,7 @@
       <button class="nav-btn" onclick="location.href='home.html'">
         <i class="fas fa-house"></i>
       </button>
-      <button class="nav-btn" onclick="location.href='chat.html'">
+      <button id="nav-comments" class="nav-btn">
         <i class="fas fa-comments"></i>
       </button>
       
@@ -63,7 +63,9 @@
 
     <!-- Khung chat -->
     <main class="chat-main">
-      <div id="chat-header" class="chat-header"></div>
+      <div id="chat-header" class="chat-header">
+        <span class="back-btn"><i class="fa fa-arrow-left"></i></span>
+      </div>
       <div id="chat-messages" class="messages">
         <div class="skeleton-message"></div>
         <div class="skeleton-message mine"></div>

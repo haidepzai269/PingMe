@@ -480,68 +480,7 @@
   100% { transform: translate(-1px, 2px) rotate(-1deg); }
 }
 
-@media (max-width: 768px) {
-  .chat-container {
-    flex-direction: column;
-  }
 
-  .sidebar {
-    flex-direction: row;
-    justify-content: space-around;
-    width: 100%;
-    height: 60px;
-  }
-   
-  .chat-list {
-    width: 100%;
-    border-right: none;
-    border-bottom: 1px solid #ccc;
-    height: auto;
-    padding: 10px;
-  }
-  .chat-main {
-    margin: 0;
-    border-radius: 0;
-  }
-
-  .chat-header {
-    font-size: 14px;
-    padding: 8px;
-  }
-
-  #send-btn {
-    padding: 6px 10px;
-    font-size: 14px;
-  }
-
-  .chat-input input {
-    font-size: 14px;
-  }
-
-  .scroll-to-bottom {
-    right: 20px;
-    bottom: 80px;
-  }
-  #user-suggestions {
-    display: none;
-  }
-
-  .chat-list h3 {
-    display: none;
-  }
-
-  .chat-list {
-    padding-bottom: 0;
-  }
-
-  .chat-main {
-    margin-top: 0;
-  }
-  #group-list{
-    display: none;
-
-  }
-}
 .avatar-status {
   border: 3px solid red; /* offline mặc định */
   border-radius: 50%;
@@ -1935,38 +1874,187 @@
   display: inline-block;
 }
 
-
 @media (max-width: 768px) {
-  /* Ẩn chat-list */
-  .chat-list {
-    display: none !important;
-  }
-
-  /* Container dọc: sidebar trên, chat-main dưới */
   .chat-container {
-    flex-direction: column;
-  }
-
-  /* Sidebar ngang trên cùng */
-  .sidebar {
     flex-direction: row;
-    justify-content: space-around;
-    align-items: center;
-    width: 100%;
-    height: 60px; /* chiều cao hợp lý cho mobile */
-    padding: 5px 0;
-    border-radius: 0;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    gap : 5px;
   }
 
-  /* Khung chat chiếm hết dưới */
+  .sidebar {
+    flex-direction: column;
+    width: 10%;
+    height: 100%;
+  }
+   
+  .chat-list {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid #ccc;
+    height: auto;
+    padding: 10px;
+  }
   .chat-main {
-    flex: 1 !important;
-    width: 100% !important;
-    margin: 0 !important;
-    border-radius: 0 !important;
+    margin: 0;
+    border-radius: 0;
+  }
+
+  .chat-header {
+    font-size: 14px;
+    padding: 8px;
+  }
+
+  #send-btn {
+    padding: 6px 10px;
+    font-size: 14px;
+  }
+
+  .chat-input input {
+    font-size: 14px;
+  }
+
+  .scroll-to-bottom {
+    right: 20px;
+    bottom: 80px;
+  }
+
+
+  .chat-list h3 {
+    display: none;
+  }
+
+  .chat-list {
+    padding-bottom: 0;
+  }
+
+  .chat-main {
+    margin-top: 5px;
+    border-radius: 12px;
+    margin-right: 5px;
+    margin-bottom: 5px;
+  }
+  .nav-btn{
+    width : 90%;
+   
+  }
+
+}
+/* 📱 Mobile responsive */
+@media (max-width: 768px) {
+  body.mobile-view .chat-list { display: block; width: 100%; }
+  body.mobile-view .chat-main { display: none; }
+
+  body.mobile-view.show-chat .chat-list { display: none; }
+  body.mobile-view.show-chat .chat-main { display: flex; flex: 1; width: 100%; }
+
+  /* Nút back */
+  .chat-header .back-btn {
+    display: inline-block;
+    margin-right: 10px;
+    font-size: 18px;
+    cursor: pointer;
   }
 }
+
+@media (min-width: 769px) {
+  .chat-header .back-btn {
+    display: none; /* desktop ko cần nút back */
+  }
+}
+
+
+@media (max-width: 768px) {
+  .chat-header .back-btn {
+    display: inline-block;
+    margin-right: 10px;
+    font-size: 18px;
+    cursor: pointer;
+  }
+}
+
+@media (min-width: 769px) {
+  .chat-header .back-btn {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  #call-modal {
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: black;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .call-box {
+    width: 100%;
+    height: 100%;
+    border-radius: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 0;
+    background: black;
+  }
+
+  /* Remote video (người bên kia) full screen */
+  .video-container {
+    flex: 1;
+    position: relative;
+    width: 100%;
+    height: 100%;
+  }
+
+  #remote-video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    background: black;
+  }
+
+  /* Local video (mình) nhỏ góc phải */
+  #local-video {
+    position: absolute;
+    bottom: 80px; /* chừa chỗ cho nút control */
+    right: 10px;
+    width: 120px;
+    height: 160px;
+    border-radius: 8px;
+    border: 2px solid white;
+    object-fit: cover;
+    background: black;
+    display: block;
+  }
+
+  /* Thanh điều khiển call */
+  .call-actions {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    padding: 12px 0;
+    background: rgba(0,0,0,0.5);
+  }
+
+  .call-actions button {
+    width: 55px;
+    height: 55px;
+    border-radius: 50%;
+    font-size: 20px;
+    border: none;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: white;
+  }
+
+  #accept-call-btn { background: #4caf50; }
+  #reject-call-btn, #end-call-btn { background: #f44336; }
+  #toggle-mic-btn, #toggle-speaker-btn { background: #333; }
+}
+
 #unsupported-message {
   position: fixed;
   top: 0;
@@ -1985,4 +2073,19 @@
 
 .hidden {
   display: none !important;
+}
+
+
+#call-modal {
+  display: none;   /* ẩn mặc định */
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.6);
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+}
+#call-modal.active {
+  display: flex;   /* khi bật modal thì thêm class .active */
 }
