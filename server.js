@@ -90,7 +90,7 @@ const fetchWeather = require('./utils/weather'); // bạn cần export hàm lấ
 // }, {
 //   timezone: 'Asia/Ho_Chi_Minh'
 // });
-cron.schedule('* 9 * * *', async () => {
+cron.schedule('* 7 * * *', async () => {
   try {
     console.log('⏰ Chạy cron job thời tiết 19h...');
     const { rows: users } = await pool.query('SELECT id FROM users');
