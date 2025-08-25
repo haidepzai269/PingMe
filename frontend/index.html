@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PingMe – One‑Pager / Datasheet</title>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Font Awesome CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+
+  <style>
+    :root{
+      --bg:#0b1020;            /* nền đậm công nghệ */
+      --panel:#0f1733;         /* thẻ */
+      --text:#e8ecf1;          /* chữ chính */
+      --muted:#c4cbd6;         /* chữ phụ */
+      --primary:#5aa9ff;       /* xanh dương */
+      --accent:#8b5cf6;        /* tím */
+      --ok:#22c55e;            /* xanh lá */
+      --warn:#f59e0b;          /* vàng */
+      --cold:#60a5fa;          /* xanh nhạt */
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial,"Apple Color Emoji","Segoe UI Emoji";
+      background:radial-gradient(1200px 700px at 85% -10%, rgba(90,169,255,.15), transparent 60%),
+                 radial-gradient(900px 600px at -20% 10%, rgba(139,92,246,.18), transparent 60%),
+                 var(--bg);
+      color:var(--text);
+      -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+    }
+    .wrap{max-width:1000px;margin:40px auto;padding:0 20px 64px}
+    .topbar{height:8px;border-radius:999px;background:linear-gradient(90deg,var(--primary),var(--accent));box-shadow:0 8px 30px rgba(90,169,255,.25)}
+    header{display:flex;align-items:center;gap:16px;margin:22px 0 8px}
+    .logo{width:40px;height:40px;border-radius:12px;background:linear-gradient(145deg,var(--primary),var(--accent));display:grid;place-items:center;font-weight:800}
+    .logo span{color:#fff}
+    .title{display:flex;flex-direction:column}
+    h1{font-size:28px;line-height:1.1;margin:0 0 6px;font-weight:800}
+    .subtitle{color:var(--muted);font-size:14px}
+
+    .hero{display:grid;grid-template-columns:1.15fr .85fr;gap:18px;margin:24px 0}
+    .panel{background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.01));border:1px solid rgba(255,255,255,.06);border-radius:18px;box-shadow:0 20px 40px rgba(0,0,0,.18);padding:18px}
+    .panel h2{margin:2px 0 10px;font-size:18px}
+    .panel p{color:var(--muted);margin:8px 0 0;line-height:1.7}
+    .bullets{display:grid;gap:10px;margin-top:6px}
+    .chip{display:flex;gap:10px;align-items:flex-start;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);padding:10px 12px;border-radius:12px}
+    .check{width:22px; height:22px; border-radius:6px; background:rgba(34,197,94,.18); border:1px solid rgba(34,197,94,.35); display:grid; place-items:center; font-size:14px}
+
+    .grid{display:grid;gap:18px}
+    .grid.cols-3{grid-template-columns:repeat(3,1fr)}
+    .grid.cols-2{grid-template-columns:repeat(2,1fr)}
+
+    .sec-title{display:flex;align-items:center;gap:10px;margin:26px 0 12px}
+    .sec-title .dot{width:10px;height:10px;border-radius:50%;background:linear-gradient(145deg,var(--primary),var(--accent))}
+    .kpi{display:flex;gap:12px;align-items:baseline;color:var(--muted)}
+    .kpi b{font-size:22px;color:var(--text)}
+
+    .features .item{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);padding:12px;border-radius:14px}
+    .features .item h3{font-size:14px;margin:0 0 6px}
+    .features .item p{margin:0;color:var(--muted);font-size:13px;line-height:1.6}
+
+    .stack{display:flex;flex-wrap:wrap;gap:10px}
+    .badge{border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.05);padding:8px 10px;border-radius:999px;font-size:13px}
+
+    .timeline{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+    .timeline .step{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:12px}
+    .timeline .step .tag{font-size:12px;padding:4px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.12);display:inline-block;margin-bottom:8px}
+
+    footer{margin-top:28px;display:flex;justify-content:space-between;align-items:center;gap:12px}
+    footer .bar{height:6px;flex:1;border-radius:999px;background:linear-gradient(90deg,var(--accent),var(--primary))}
+    .contact{font-size:13px;color:var(--muted)}
+
+    .actions{position:sticky;top:10px;display:flex;justify-content:flex-end;margin:8px 0}
+    .btn{border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.06);backdrop-filter:blur(6px);padding:10px 14px;border-radius:10px;color:#fff;text-decoration:none;font-size:14px;cursor:pointer}
+    .btn:hover{background:rgba(255,255,255,.1)}
+    .fade-up {
+  opacity: 0;
+  transform: translateY(40px);
+  transition: all 0.8s ease-out;
+     }
+
+    .fade-up.show {
+  opacity: 1;
+  transform: translateY(0);
+    }
+    /* Responsive */
+    @media (max-width:900px){
+      .hero{grid-template-columns:1fr}
+      .grid.cols-3{grid-template-columns:1fr 1fr}
+    }
+    @media (max-width:620px){
+      .grid.cols-3{grid-template-columns:1fr}
+      .grid.cols-2{grid-template-columns:1fr}
+    }
+
+    /* Print to PDF (A4) */
+    @media print {
+  @page { size: A4; margin:0 }
+
+  body {
+    background: linear-gradient(120deg, #5aa9ff, #8b5cf6), var(--bg); /* solid */
+    color: var(--text);
+
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .wrap { max-width:100%; margin:0; padding:0 }
+  .actions { display:none }
+}
+
+.chip:hover,
+.item:hover,
+.badge:hover,
+.kpi:hover{
+  background-color: rgb(200, 202, 205,0.4);
+  cursor: pointer;
+}
+
+.fa-user,
+.fa-users,
+.fa-magnifying-glass,
+.fa-user-plus,
+.fa-comments,
+.fa-headset,
+.fa-comment-dots,
+.fa-gear,
+.fa-lock,
+.fa-bell,
+.fa-virus,
+.fa-google{
+  color : red;
+  margin-left: 10px;
+}
+
+.logo {
+  width: 60px;
+  height: 60px;
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.logo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* giữ tỉ lệ ảnh */
+}
+
+.logo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: drop-shadow(0 0 15px #5aa9ff); /* tạo hiệu ứng glow xanh */
+}
+
+#feedbackForm input,
+#feedbackForm textarea {
+  width:100%;
+  padding:10px;
+  margin:6px 0;
+  border-radius:8px;
+  border:none;
+  background:rgba(255,255,255,0.05);
+  color:var(--text);
+}
+#feedbackForm input:focus,
+#feedbackForm textarea:focus {
+  outline:1px solid var(--primary);
+}
+#feedbackStatus {
+  margin-top:10px;
+  color:var(--muted);
+  font-size:13px;
+}
+
+
+  </style>
+  <script type="text/javascript" src="https://cdn.emailjs.com/dist/email.min.js"></script>
+  <script type="text/javascript">
+    (function(){
+      emailjs.init("_rGYtEeMM8vCf2rVb"); // key từ EmailJS
+    })();
+  </script>
+  
+</head>
+<body>
+  <div class="wrap">
+    <div class="topbar"></div>
+
+    <div class="actions">
+      <button class="btn" onclick="window.print()">Tải PDF (In)</button>
+    </div>
+
+    <header>
+      <div class="logo">
+        <img src="ChatGPT Image Aug 25, 2025, 10_37_27 AM.png" alt="PingMe Logo" class="logo-img">
+      </div>      <div class="title">
+        <h1>PingMe – Ứng dụng Chat & Kết bạn Realtime</h1>
+        <div class="subtitle">Trò chuyện hiện đại, mượt mà, kết nối tức thì.</div>
+      </div>
+    </header>
+
+    <!-- HERO: Giới thiệu & Điểm nổi bật -->
+    <section class="hero">
+      <div class="panel">
+        <h2>Giới thiệu</h2>
+        <p>
+          PingMe được xây dựng nhằm mang đến trải nghiệm trò chuyện hiện đại, trực quan và hoàn toàn realtime.
+          Ứng dụng không chỉ dừng lại ở việc nhắn tin, mà còn tích hợp nhiều tính năng thông minh giúp người dùng dễ dàng kết nối,
+          giữ liên lạc và xây dựng các mối quan hệ mới.Link PingMe chính thức :<br>
+          <a href="https://pingme-dopk.onrender.com" class="btn btn-success" target="_blank">
+            https://pingme-dopk.onrender.com
+          </a>
+        </p>
+        <div class="sec-title" style="margin-top:14px"><span class="dot"></span><strong>Mục tiêu sản phẩm</strong></div>
+        <div class="grid cols-2">
+          <div class="kpi"><b>Realtime</b><span>Chat, nhóm, gọi thoại/video ổn định.</span></div>
+          <div class="kpi"><b>UX Nhanh</b><span>Nhanh – nhẹ – trực quan.</span></div>
+          <div class="kpi"><b>An toàn</b><span>Bảo mật, chặn tin nhắn, kiểm soát dữ liệu.</span></div>
+          <div class="kpi"><b>Mở rộng</b><span>Định hướng thành hệ sinh thái kết nối.</span></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Điểm nổi bật</h2>
+        <div class="bullets">
+          <div class="chip"><div class="check">✓</div><div><b>Trải nghiệm mượt mà</b><br><span class="muted">Giao diện rõ ràng, thao tác nhanh.</span></div></div>
+          <div class="chip"><div class="check">✓</div><div><b>Realtime toàn diện</b><br><span class="muted">Tin nhắn cá nhân/nhóm, voice & video call.</span></div></div>
+          <div class="chip"><div class="check">✓</div><div><b>Thông báo thông minh</b><br><span class="muted">Toast, badge, lời mời kết bạn.</span></div></div>
+          <div class="chip"><div class="check">✓</div><div><b>Bảo mật & chống spam</b><br><span class="muted">Chặn tin nhắn realtime; đã fix các nguy cơ XSS trọng yếu.</span></div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TÍNH NĂNG CHÍNH -->
+    <div class="sec-title"><span class="dot"></span><strong>Tính năng chính đã hoàn thiện</strong></div>
+    <section class="features grid cols-3">
+      <div class="item"><h3>Đăng nhập Google/Tài khoản <i class="fa-brands fa-google"></i></h3><p>Đăng ký, đăng nhập, đăng xuất an toàn.</p></div>
+      <div class="item"><h3>Hồ sơ cá nhân <i class="fa-solid fa-user"></i></h3><p>Chỉnh sửa hồ sơ, trạng thái online theo viền avatar.</p></div>
+      <div class="item"><h3>Tìm kiếm người dùng <i class="fa-solid fa-magnifying-glass"></i></h3><p>B-tree Index; sẵn sàng nâng cấp Elasticsearch.</p></div>
+      <div class="item"><h3>Kết bạn / Hủy bạn <i class="fa-solid fa-user-plus"></i></h3><p>Realtime, nhận thông báo lời mời.</p></div>
+      <div class="item"><h3>Nhắn tin cá nhân <i class="fa-solid fa-comments"></i></h3><p>Realtime, badge + toast thông báo.</p></div>
+      <div class="item"><h3>Voice & Video Call <i class="fa-solid fa-headset"></i></h3><p>Gọi thoại, video realtime.</p></div>
+      <div class="item"><h3>Nhóm chat <i class="fa-solid fa-users"></i></h3><p>Tạo/thoát/xóa nhóm & nhắn tin nhóm realtime.</p></div>
+      <div class="item"><h3>Quản lý nội dung <i class="fa-regular fa-comment-dots"></i></h3><p>Reply, emoji, ảnh/video, trạng thái tin nhắn.</p></div>
+      <div class="item"><h3>Tùy biến giao diện <i class="fa-solid fa-gear"></i></h3><p>Đổi/xóa nền chat realtime.</p></div>
+      <div class="item"><h3>Quyền riêng tư <i class="fa-solid fa-lock"></i></h3><p>Chặn tin nhắn realtime, xóa tin nhắn.</p></div>
+      <div class="item"><h3>Thông báo thời tiết và kết bạn <i class="fa-solid fa-bell"></i></h3><p>Push hằng ngày từ API Weather.</p></div>
+      <div class="item"><h3>Chống XSS <i class="fa-solid fa-virus"></i></h3><p>Đã rà soát & khắc phục các điểm rủi ro chính.</p></div>
+    </section>
+
+    <!-- CÔNG NGHỆ SỬ DỤNG -->
+    <div class="sec-title"><span class="dot"></span><strong>Công nghệ sử dụng</strong></div>
+    <section class="panel">
+      <div class="stack">
+        <span class="badge">Frontend: HTML, CSS, JavaScript</span>
+        <span class="badge">Backend: Node.js + Express</span>
+        <span class="badge">Database: PostgreSQL (Index)</span>
+        <span class="badge">Realtime: Socket.io</span>
+        <span class="badge">Upload media: Multer + Cloudinary</span>
+        <span class="badge">Bảo mật: CORS</span>
+      </div>
+    </section>
+
+    <!-- LỘ TRÌNH PHÁT TRIỂN -->
+    <div class="sec-title"><span class="dot"></span><strong>Định hướng phát triển</strong></div>
+    <section class="timeline">
+      <div class="step">
+        <span class="tag">Ngắn hạn</span>
+        <div><b>•</b> Hoàn thiện chat nhóm<br><b>•</b> Typing status realtime<br><b>•</b> Tối ưu UX/UI</div>
+      </div>
+      <div class="step">
+        <span class="tag">Trung hạn</span>
+        <div><b>•</b> Story (status)<br><b>•</b> Elasticsearch Cloud<br><b>•</b> Mã hóa end‑to‑end</div>
+      </div>
+      <div class="step">
+        <span class="tag">Dài hạn</span>
+        <div><b>•</b> Mạng xã hội mini<br><b>•</b> AI gợi ý kết bạn<br><b>•</b> Đa nền tảng</div>
+      </div>
+    </section>
+
+    <footer>
+      <div class="bar"></div>
+      <div class="contact">Người trình bày: Nguyễn Hoàng Hải • Email/Website/GitHub: haidepzai2692006@gmail.com</div>
+    </footer>
+    <section class="panel" style="margin-top:40px">
+      <h2>Phản hồi</h2>
+      <form id="feedbackForm">
+        <input type="text" name="user_name" placeholder="Tên của bạn" required>
+        <input type="email" name="user_email" placeholder="Email của bạn" required>
+        <textarea name="message" placeholder="Nội dung phản hồi..." required></textarea>
+        <button type="submit" class="btn">Gửi phản hồi</button>
+      </form>
+      <p id="feedbackStatus"></p>
+    </section>
+  </div>
+
+  
+  <script>
+    const animatedElements = document.querySelectorAll(
+      '.panel, .chip, .features .item, .timeline .step, header, footer'
+    );
+  
+    animatedElements.forEach(el => el.classList.add('fade-up'));
+  
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('show');   // hiện lại
+        } else {
+          entry.target.classList.remove('show'); // ẩn đi khi ra khỏi màn hình
+        }
+      });
+    }, { threshold: 0.2 }); // 20% vào viewport thì chạy
+  
+    animatedElements.forEach(el => observer.observe(el));
+  </script>
+  <script>
+    document.getElementById("feedbackForm").addEventListener("submit", function(e) {
+      e.preventDefault();
+      
+      emailjs.sendForm("haidepzai269", "template_cc0i3gt", this)
+        .then(() => {
+          document.getElementById("feedbackStatus").innerText = "✅ Cảm ơn bạn! Phản hồi đã được gửi.";
+          this.reset();
+        }, (error) => {
+          document.getElementById("feedbackStatus").innerText = "❌ Lỗi! Vui lòng thử lại.";
+          console.error("EmailJS Error:", error);
+        });
+    });
+  </script>
+  
+</body>
+</html>
