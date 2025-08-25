@@ -119,10 +119,7 @@
   <button onclick="location.href='chat.html'">💬</button>
   <button onclick="document.getElementById('edit-modal').classList.remove('hidden')">👤</button>
   </div> -->
-  <div id="unsupported-message" class="hidden">
-    <h2>Xin lỗi , trang không hoạt động</h2>
-    <p>Thiết bị của bạn có màn hình quá nhỏ để sử dụng trang web này.</p>
-  </div>
+
   <div id="user-info-popup" class="popup">
     <div class="popup-content">
       <span class="popup-close" onclick="closeUserInfoPopup()">&times;</span>
@@ -135,21 +132,7 @@
   </div> 
   <script type="module" src="authFetch.js"></script>
   <script type="module" src="home.js"></script>
-  <script>
-    function checkScreenSize() {
-      const warning = document.getElementById("unsupported-message");
-      if (window.innerWidth < 400) {
-        warning.classList.remove("hidden");
-        document.body.style.overflow = "hidden";
-      } else {
-        warning.classList.add("hidden");
-        document.body.style.overflow = "";
-      }
-    }
-  
-    window.addEventListener("resize", checkScreenSize);
-    window.addEventListener("DOMContentLoaded", checkScreenSize);
-  </script>
+
   
 </body>
 </html>

@@ -1349,7 +1349,7 @@ box-shadow: 0 0 4px rgba(0,0,0,0.3);
 
 
 /* MOBILE < 768px: sidebar giữ nguyên; profile 1/3 trên, main 2/3 dưới */
-@media (max-width: 768px) {
+@media (max-width: 900px) {
   html, body { height: 100%; }
 
   .wrapper {
