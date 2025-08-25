@@ -34,13 +34,7 @@
       </div>
     </div>
   </div>
-  <div id="screen-warning" style="display: none;">
-    <div class="warning-box">
-      <p>Thiết bị của bạn không phù hợp cho ứng dụng<br>
-        Vui lòng chuyển sang thiết bị khác phù hợp ✓
-      </p>
-    </div>
-  </div>
+
   
   <script  src="auth.js"></script>
   <script>
@@ -50,22 +44,7 @@
       wrapper.classList.toggle('slide-active');
     });
   </script>
-  <script>
-    function checkScreenSize() {
-      const warning = document.getElementById('screen-warning');
-      const wrapper = document.querySelector('.auth-wrapper');
-      if (window.innerWidth < 400) {
-        warning.style.display = 'flex';
-        wrapper.style.display = 'none';
-      } else {
-        warning.style.display = 'none';
-        wrapper.style.display = 'flex';
-      }
-    }
-  
-    window.addEventListener('resize', checkScreenSize);
-    window.addEventListener('DOMContentLoaded', checkScreenSize);
-  </script>  
+
   
 </body>
 </html>
