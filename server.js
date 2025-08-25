@@ -14,6 +14,10 @@ const jwt = require("jsonwebtoken");
 const app = express();
 app.use(cors());
 app.use(express.json());
+// Khi vào / => mở auth.html
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'frontend', 'auth.html'));
+});
 app.use(express.static(path.join(__dirname, 'frontend')));
 
 // ===== Routes =====
@@ -42,10 +46,7 @@ app.use('/api/calls', callRoutes);
 app.use('/api/weather', weatherRoutes);
 app.use('/api/notifications', notificationRoutes);
 
-// Khi vào / => mở auth.html
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'frontend', 'auth.html'));
-});
+
 
 // ===== Tạo HTTP server & Socket.IO =====
 const server = http.createServer(app);
