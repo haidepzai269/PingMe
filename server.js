@@ -153,37 +153,6 @@ passport.use(new GoogleStrategy({
   }
 }));
 
-// === FACEBOOK ===
-// passport.use(new FacebookStrategy({
-//   clientID: process.env.FACEBOOK_APP_ID,
-//   clientSecret: process.env.FACEBOOK_APP_SECRET,
-//   callbackURL: "http://localhost:3000/api/auth/facebook/callback",
-//   profileFields: ["id", "emails", "displayName", "photos"]
-// }, async (accessToken, refreshToken, profile, done) => {
-//   try {
-//     const email = profile.emails?.[0]?.value || `${profile.id}@facebook.com`;
-//     const username = profile.displayName || email;
-//     const avatar = profile.photos?.[0]?.value || null;
-
-//     let result = await pool.query("SELECT * FROM users WHERE email=$1", [email]);
-
-//     let user;
-//     if (result.rows.length === 0) {
-//       const insert = await pool.query(
-//         "INSERT INTO users (username, password, email, avatar) VALUES ($1,$2,$3,$4) RETURNING *",
-//         [username, "", email, avatar]
-//       );
-//       user = insert.rows[0];
-//     } else {
-//       user = result.rows[0];
-//     }
-
-//     return done(null, user);
-//   } catch (err) {
-//     return done(err, null);
-//   }
-// }));
-
 app.use(passport.initialize());
 
 // ===== Routes OAuth =====
@@ -200,16 +169,65 @@ app.get("/api/auth/google/callback",
   }
 );
 
-app.get("/api/auth/facebook", passport.authenticate("facebook", { scope: ["email"] }));
-app.get("/api/auth/facebook/callback",
-  passport.authenticate("facebook", { session: false, failureRedirect: "/?error=facebook" }),
-  (req, res) => {
-    const accessToken = jwt.sign({ id: req.user.id }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: "15m" });
-    const refreshToken = jwt.sign({ id: req.user.id }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: "7d" });
+// app.get("/api/auth/facebook", passport.authenticate("facebook", { scope: ["email"] }));
+// app.get("/api/auth/facebook/callback",
+//   passport.authenticate("facebook", { session: false, failureRedirect: "/?error=facebook" }),
+//   (req, res) => {
+//     const accessToken = jwt.sign({ id: req.user.id }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: "15m" });
+//     const refreshToken = jwt.sign({ id: req.user.id }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: "7d" });
 
-    res.redirect(`/home.html?accessToken=${accessToken}&refreshToken=${refreshToken}`);
+//     res.redirect(`/home.html?accessToken=${accessToken}&refreshToken=${refreshToken}`);
+//   }
+// );
+
+//==FaceBook==//
+const admin = require("firebase-admin");
+
+admin.initializeApp({
+  credential: admin.credential.cert(require("./firebase-service-account.json"))
+});
+
+app.post("/api/auth/firebase", async (req, res) => {
+  const { idToken } = req.body;
+  try {
+    const decoded = await admin.auth().verifyIdToken(idToken);
+
+    const email = decoded.email || null;
+    const phone = decoded.phone_number || null;
+    const username = decoded.name || phone || email;
+    const avatar = decoded.picture || null;
+
+    let result;
+    if (email) {
+      result = await pool.query("SELECT * FROM users WHERE email=$1", [email]);
+    } else if (phone) {
+      result = await pool.query("SELECT * FROM users WHERE phone=$1", [phone]);
+    } else {
+      return res.status(400).json({ message: "Không tìm thấy email hoặc số điện thoại trong token" });
+    }
+
+    let user;
+    if (result.rows.length === 0) {
+      const insert = await pool.query(
+        "INSERT INTO users (username, password, email, phone, avatar) VALUES ($1,$2,$3,$4,$5) RETURNING *",
+        [username, "", email, phone, avatar]
+      );
+      user = insert.rows[0];
+    } else {
+      user = result.rows[0];
+    }
+
+    const accessToken = jwt.sign({ id: user.id }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: "15m" });
+    const refreshToken = jwt.sign({ id: user.id }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: "7d" });
+
+    res.json({ accessToken, refreshToken });
+  } catch (err) {
+    console.error(err);
+    res.status(401).json({ message: "Token Firebase không hợp lệ" });
   }
-);
+});
+
+
 
 // ===== Start server =====
 const PORT = process.env.PORT || 3000;

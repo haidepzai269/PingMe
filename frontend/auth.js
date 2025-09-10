@@ -64,3 +64,19 @@ document.getElementById('auth-btn').addEventListener('click', async () => {
     }
   });
 });
+
+// Toggle giữa login bằng tài khoản và login bằng điện thoại
+document.getElementById("phone-login-btn").addEventListener("click", () => {
+  const accountForm = document.getElementById("account-form");
+  const phoneForm = document.getElementById("phone-form");
+
+  if (phoneForm.style.display === "none") {
+    accountForm.style.display = "none";
+    phoneForm.style.display = "block";
+    document.getElementById("form-title").textContent = "Đăng nhập bằng số điện thoại";
+  } else {
+    accountForm.style.display = "block";
+    phoneForm.style.display = "none";
+    document.getElementById("form-title").textContent = "Đăng nhập - PingMe";
+  }
+});

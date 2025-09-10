@@ -216,3 +216,52 @@ body {
   }
 }
 
+
+.social-btn.phone {
+  background-color: #27ae60;
+  color: white;
+}
+.social-btn.phone:hover {
+  background-color: #1e874b;
+}
+
+#phone-form input,
+#phone-form button {
+  width: 100%;
+  margin-top: 8px;
+  box-sizing: border-box;
+}
+
+.social-login {
+  margin-top: 15px;
+  display: flex;
+  flex-direction: row;   /* nằm ngang */
+  justify-content: center;
+  gap: 12px;
+}
+
+
+.social-login {
+  margin-top: 15px;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  gap: 12px;
+}
+
+.social-btn {
+  width: 50px;
+  height: 50px;
+  border-radius: 10px; /* vuông bo nhẹ */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.2s ease, background 0.3s;
+  font-size: 22px;
+}
+
+.social-btn:hover {
+  transform: scale(1.1);
+}
