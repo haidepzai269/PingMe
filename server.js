@@ -182,10 +182,19 @@ app.get("/api/auth/google/callback",
 
 //==FaceBook==//
 const admin = require("firebase-admin");
+console.log("Private Key (raw):", process.env.FIREBASE_PRIVATE_KEY);
+console.log("Private Key (parsed):", process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'));
 
 admin.initializeApp({
-  credential: admin.credential.cert(require("./firebase-service-account.json"))
+  credential: admin.credential.cert({
+    projectId: process.env.FIREBASE_PROJECT_ID,
+    clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+    privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+  }),
 });
+
+
+
 
 app.post("/api/auth/firebase", async (req, res) => {
   const { idToken } = req.body;
