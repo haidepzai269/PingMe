@@ -15,8 +15,18 @@ cloudinary.config({
 // Multer lưu file tạm
 const upload = multer({
   dest: 'uploads/',
-  limits: { fileSize: 15 * 1024 * 1024 } // 15MB
+  limits: { fileSize: 20 * 1024 * 1024 }, // tăng 20MB cho audio/video
+  fileFilter: (req, file, cb) => {
+    const allowed = [
+      'image/png','image/jpeg','image/jpg','image/webp',
+      'video/mp4','video/quicktime','video/x-msvideo','video/x-matroska',
+      'audio/webm','audio/ogg','audio/mpeg','audio/wav','audio/x-wav','audio/mp3'
+    ];
+    if (allowed.includes(file.mimetype)) cb(null, true);
+    else cb(new Error('Loại file không được phép'), false);
+  }
 });
+
 
 exports.multerUpload = upload.single('file');
 
@@ -33,14 +43,25 @@ exports.sendMessage = async (req, res) => {
   try {
     if (req.file) {
       const ext = path.extname(req.file.originalname).toLowerCase();
-      media_type = ext.match(/\.(mp4|mov|avi|mkv)$/) ? 'video' : 'image';
-
+    
+      if (/\.webm$|\.ogg$|\.mp3$|\.mpeg$|\.wav$/.test(ext) || req.file.mimetype.startsWith('audio')) {
+        media_type = 'audio';
+      } else if (ext.match(/\.(mp4|mov|avi|mkv)$/) || req.file.mimetype.startsWith('video')) {
+        media_type = 'video';
+      } else {
+        media_type = 'image';
+      }
+    
+      // Cloudinary: audio thì resource_type phải là raw
+      const resourceType = media_type === 'video' ? 'video' : media_type === 'audio' ? 'raw' : 'image';
+    
       const result = await cloudinary.uploader.upload(req.file.path, {
-        resource_type: media_type === 'video' ? 'video' : 'image'
+        resource_type: resourceType
       });
       media_url = result.secure_url;
       fs.unlinkSync(req.file.path);
     }
+    
 
     const query = `
       INSERT INTO messages (sender_id, receiver_id, content, media_url, media_type, unread, reply_to)

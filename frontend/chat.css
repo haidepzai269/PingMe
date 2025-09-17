@@ -2090,3 +2090,54 @@
   display: flex;   /* khi bật modal thì thêm class .active */
 }
 
+
+
+#recordBtn.recording {
+  animation: pulse 1s infinite;
+  color: #fff;
+  background: #e53935;
+  border-radius: 8px;
+}
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.06); }
+  100% { transform: scale(1); }
+}
+#record-timer { font-weight: bold; color: #e53935; }
+#record-waveform {
+  display: none;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+}
+
+#record-waveform canvas {
+  height: 30px;
+  border-radius: 6px;
+}
+#record-waveform {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+#wave-canvas {
+  flex: 1;
+  background: #111;
+  border-radius: 6px;
+}
+
+.chat-input button#recordBtn {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: #666;
+  transition: color 0.2s;
+}
+
+
+.chat-input button#recordBtn:hover {
+  color: #333;
+}

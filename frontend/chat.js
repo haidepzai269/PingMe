@@ -377,21 +377,37 @@ document.getElementById('delete-chat-btn').addEventListener('click', () => {
       msgDiv.appendChild(text);
     }
   
-    // --- Nội dung media ---
-    if (msg.media_url) {
-      if (msg.media_type === 'image') {
-        const img = document.createElement('img');
-        img.src = msg.media_url;
-        img.style.maxWidth = '200px';
-        msgDiv.appendChild(img);
-      } else {
-        const video = document.createElement('video');
-        video.src = msg.media_url;
-        video.controls = true;
-        video.style.maxWidth = '200px';
-        msgDiv.appendChild(video);
-      }
+  // Nội dung media
+  if (msg.media_url) {
+    if (msg.media_type === 'image') {
+    const img = document.createElement('img');
+    img.src = msg.media_url;
+    img.style.maxWidth = '200px';
+    msgDiv.appendChild(img);
+    } else if (msg.media_type === 'video') {
+    const video = document.createElement('video');
+    video.src = msg.media_url;
+    video.controls = true;
+    video.style.maxWidth = '260px';
+    msgDiv.appendChild(video);
+    } else if (msg.media_type === 'audio') {
+    const audio = document.createElement('audio');
+    audio.src = msg.media_url;
+    audio.controls = true;
+    audio.style.maxWidth = '260px';
+    audio.style.display = 'block';
+    audio.style.marginTop = '6px';
+    msgDiv.appendChild(audio);
+    } else {
+    // fallback
+    const fileLink = document.createElement('a');
+    fileLink.href = msg.media_url;
+    fileLink.target = '_blank';
+    fileLink.textContent = 'Tệp đính kèm';
+    msgDiv.appendChild(fileLink);
     }
+  }
+
   
     // --- Nút reply ---
     const replyBtn = document.createElement('button');
@@ -1522,16 +1538,135 @@ document.getElementById('cancel-reply').addEventListener('click', () => {
 });
 
 
+// gửi voice 
+// ==== Voice message (recording) ====
+const recordBtn = document.getElementById('recordBtn');
+const recordTimerEl = document.getElementById('record-timer');
+
+let mediaRecorder = null;
+let audioChunks = [];
+let recordingInterval = null;
+let recordStartTime = null;
+let cancelled = false;
+
+
+function formatTime(sec) {
+  const m = String(Math.floor(sec/60)).padStart(2,'0');
+  const s = String(Math.floor(sec%60)).padStart(2,'0');
+  return `${m}:${s}`;
+}
+
+const recordWaveformEl = document.getElementById('record-waveform');
+const waveCanvas = document.getElementById('wave-canvas');
+const cancelRecordBtn = document.getElementById('cancel-record-btn');
+const msgInput = document.getElementById('message-input');
+let audioCtx, analyser, dataArray, animationId;
+
+recordBtn.addEventListener('click', async (e) => {
+  e.preventDefault();
+
+  if (!mediaRecorder || mediaRecorder.state === 'inactive') {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaRecorder = new MediaRecorder(stream);
+      audioChunks = [];
+
+      mediaRecorder.ondataavailable = (ev) => {
+        if (ev.data.size > 0) audioChunks.push(ev.data);
+      };
+
+      mediaRecorder.onstop = async () => {
+        cancelRecordBtn.onclick = null; // reset hủy
+        stopWaveform();
+        msgInput.style.display = 'inline';
+        recordWaveformEl.style.display = 'none';
+
+        if (cancelled) {
+          cancelled = false;
+          return; // không gửi
+        }
+
+        // gửi file như cũ
+        const blob = new Blob(audioChunks, { type: 'audio/webm' });
+        const file = new File([blob], `voice_${Date.now()}.webm`, { type: blob.type });
+        const formData = new FormData();
+        formData.append('receiver_id', chatWithUserId);
+        formData.append('file', file);
+        if (replyToMessage) formData.append('reply_to', replyToMessage.id);
+
+        try {
+          const res = await authFetch('/api/messages', { method: 'POST', body: formData });
+          const message = await res.json();
+          addMessageToUI(message);
+        } catch (err) {
+          console.error('Lỗi gửi voice message:', err);
+        }
+      };
+
+      mediaRecorder.start();
+      msgInput.style.display = 'none';
+      recordWaveformEl.style.display = 'flex';
+      startWaveform(stream);
+
+      // nút hủy
+      cancelled = false;
+      cancelRecordBtn.onclick = () => {
+        cancelled = true;
+        mediaRecorder.stop();
+        mediaRecorder.stream.getTracks().forEach(t => t.stop());
+      };
+
+    } catch (err) {
+      alert('Vui lòng cho phép truy cập micro');
+    }
+  } else if (mediaRecorder.state === 'recording') {
+    mediaRecorder.stop();
+    mediaRecorder.stream.getTracks().forEach(t => t.stop());
+  }
+});
+
+function startWaveform(stream) {
+  audioCtx = new AudioContext();
+  analyser = audioCtx.createAnalyser();
+  const source = audioCtx.createMediaStreamSource(stream);
+  source.connect(analyser);
+  analyser.fftSize = 256;
+  const bufferLength = analyser.frequencyBinCount;
+  dataArray = new Uint8Array(bufferLength);
+
+  const ctx = waveCanvas.getContext('2d');
+  function draw() {
+    animationId = requestAnimationFrame(draw);
+    analyser.getByteFrequencyData(dataArray);
+    ctx.fillStyle = '#111';
+    ctx.fillRect(0, 0, waveCanvas.width, waveCanvas.height);
+
+    const barWidth = (waveCanvas.width / bufferLength) * 2.5;
+    let x = 0;
+    for (let i = 0; i < bufferLength; i++) {
+      const barHeight = dataArray[i] / 2;
+      ctx.fillStyle = '#4cafef';
+      ctx.fillRect(x, waveCanvas.height - barHeight, barWidth, barHeight);
+      x += barWidth + 1;
+    }
+  }
+  draw();
+}
+
+function stopWaveform() {
+  if (animationId) cancelAnimationFrame(animationId);
+  if (audioCtx) audioCtx.close();
+}
+
+
+
 
 
 
 
   // Gọi luôn khi load trang
   loadFriends();
-  // loadMessages();
-  // loadCalls();
   loadConversation();
-
 });
 
 // Responsive mobile
@@ -1591,7 +1726,6 @@ if (navCommentsBtn) {
     }
   });
 }
-
 
 
 
