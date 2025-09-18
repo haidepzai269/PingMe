@@ -95,11 +95,10 @@
         <button id="recordBtn" title="Ghi âm">
          <i class="fa-solid fa-microphone"></i>
         </button>
-        <span id="record-timer" style="display:none; margin-left:6px; font-size:12px; color:#c00;">00:00</span>
         <!-- Waveform hiển thị khi đang ghi âm -->
         <div id="record-waveform" style="display:none; flex:1; align-items:center; gap:8px;">
           <canvas id="wave-canvas" width="200" height="30"></canvas>
-          <span class="record-timer">00:00</span>
+          <span id="record-timer" class="record-timer">00:00</span>
           <button id="cancel-record-btn" title="Hủy ghi âm" class="cancel-record-btn">
             <i class="fa fa-times"></i>
           </button>

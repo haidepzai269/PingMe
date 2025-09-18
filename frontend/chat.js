@@ -529,12 +529,106 @@ document.getElementById('delete-chat-btn').addEventListener('click', () => {
   });
   //let replyToMessage = null; // biến toàn cục lưu tin nhắn đang reply
 
+  // sendBtn.addEventListener('click', async () => {
+  //   if (messageInput.disabled) {
+  //     alert('Bạn không thể nhắn tin với người này.');
+  //     return;
+  //   }
+  
+  //   const formData = new FormData();
+  //   formData.append('receiver_id', chatWithUserId);
+  
+  //   const text = messageInput.value.trim();
+  //   if (text) formData.append('content', text);
+  //   if (fileInput.files[0]) formData.append('file', fileInput.files[0]);
+  
+  //   // ✅ thêm reply_to nếu có
+  //   if (replyToMessage) {
+  //     formData.append('reply_to', replyToMessage.id);
+  //   }
+  
+  //   if (!text && !fileInput.files[0]) return;
+  
+  //   try {
+  //     const res = await authFetch('/api/messages', { method: 'POST', body: formData });
+  //     if (!res.ok) {
+  //       const errorData = await res.json();
+  //       alert(errorData.message || 'Lỗi khi gửi tin nhắn');
+  //       return;
+  //     }
+  //     const message = await res.json();
+  //     addMessageToUI(message);
+  
+  //     // Reset input
+  //     messageInput.value = '';
+  //     fileInput.value = '';
+  //     chatInputBox.classList.remove('typing');
+  
+  //     // ✅ reset trạng thái reply
+  //     replyToMessage = null;
+  //     document.getElementById('reply-preview').style.display = 'none';
+  
+  //   } catch (error) {
+  //     console.error('Lỗi gửi tin nhắn:', error);
+  //     alert('Lỗi khi gửi tin nhắn');
+  //   }
+  // });
+  
+  
   sendBtn.addEventListener('click', async () => {
     if (messageInput.disabled) {
       alert('Bạn không thể nhắn tin với người này.');
       return;
     }
   
+    // 🔹 Ưu tiên gửi voice nếu có
+    if (recordedVoiceFile) {
+      const formData = new FormData();
+      formData.append('receiver_id', chatWithUserId);
+  
+      // Nếu bạn muốn cho phép kèm text caption thì giữ đoạn này:
+      const text = messageInput.value.trim();
+      if (text) formData.append('content', text);
+  
+      formData.append('file', recordedVoiceFile);
+  
+      if (replyToMessage) {
+        formData.append('reply_to', replyToMessage.id);
+      }
+  
+      try {
+        const res = await authFetch('/api/messages', { method: 'POST', body: formData });
+        if (!res.ok) {
+          const errorData = await res.json();
+          alert(errorData.message || 'Lỗi khi gửi ghi âm');
+          return;
+        }
+        const message = await res.json();
+        addMessageToUI(message);
+  
+        // Reset voice state
+        recordedVoiceFile = null;
+        if (recordedVoiceUrl) {
+          URL.revokeObjectURL(recordedVoiceUrl);
+          recordedVoiceUrl = null;
+        }
+        document.getElementById('voice-preview').style.display = 'none';
+  
+        // Reset input text
+        messageInput.value = '';
+        fileInput.value = '';
+        chatInputBox.classList.remove('typing');
+        replyToMessage = null;
+        document.getElementById('reply-preview').style.display = 'none';
+  
+      } catch (error) {
+        console.error('Lỗi gửi voice message:', error);
+        alert('Lỗi khi gửi ghi âm');
+      }
+      return; // ⛔ Dừng tại đây, không chạy xuống gửi text/file nữa
+    }
+  
+    // 🔹 Nếu không có voice thì gửi text/file như bình thường
     const formData = new FormData();
     formData.append('receiver_id', chatWithUserId);
   
@@ -542,7 +636,6 @@ document.getElementById('delete-chat-btn').addEventListener('click', () => {
     if (text) formData.append('content', text);
     if (fileInput.files[0]) formData.append('file', fileInput.files[0]);
   
-    // ✅ thêm reply_to nếu có
     if (replyToMessage) {
       formData.append('reply_to', replyToMessage.id);
     }
@@ -563,8 +656,6 @@ document.getElementById('delete-chat-btn').addEventListener('click', () => {
       messageInput.value = '';
       fileInput.value = '';
       chatInputBox.classList.remove('typing');
-  
-      // ✅ reset trạng thái reply
       replyToMessage = null;
       document.getElementById('reply-preview').style.display = 'none';
   
@@ -574,6 +665,7 @@ document.getElementById('delete-chat-btn').addEventListener('click', () => {
     }
   });
   
+
 
   socket.on('message:new', async (msg) => {
     const isCurrentChat = msg.sender_id == chatWithUserId || msg.receiver_id == chatWithUserId;
@@ -1737,7 +1829,9 @@ const recordWaveformEl = document.getElementById('record-waveform');
 const waveCanvas = document.getElementById('wave-canvas');
 const cancelRecordBtn = document.getElementById('cancel-record-btn');
 const msgInput = document.getElementById('message-input');
-
+// lưu bản ghi tạm trước khi gửi
+let recordedVoiceFile = null;
+let recordedVoiceUrl = null;
 let mediaRecorder = null;
 let audioChunks = [];
 let cancelled = false;
@@ -1824,33 +1918,33 @@ recordBtn.addEventListener('click', async (e) => {
       };
 
       mediaRecorder.onstop = async () => {
-        cancelRecordBtn.onclick = null; 
+        cancelRecordBtn.onclick = null;
         stopWaveform();
         stopRecordTimer();
-
+      
+        // hiện input text lại
         msgInput.style.display = 'inline';
         recordWaveformEl.style.display = 'none';
-
+      
         if (cancelled) {
           cancelled = false;
-          return; 
+          audioChunks = [];
+          return; // nếu user hủy thì không lưu
         }
-
+      
+        // tạo blob nhưng KHÔNG gửi ngay
         const blob = new Blob(audioChunks, { type: 'audio/webm' });
-        const file = new File([blob], `voice_${Date.now()}.webm`, { type: blob.type });
-        const formData = new FormData();
-        formData.append('receiver_id', chatWithUserId);
-        formData.append('file', file);
-        if (replyToMessage) formData.append('reply_to', replyToMessage.id);
-
-        try {
-          const res = await authFetch('/api/messages', { method: 'POST', body: formData });
-          const message = await res.json();
-          addMessageToUI(message);
-        } catch (err) {
-          console.error('Lỗi gửi voice message:', err);
-        }
+        recordedVoiceFile = new File([blob], `voice_${Date.now()}.webm`, { type: blob.type });
+        if (recordedVoiceUrl) { URL.revokeObjectURL(recordedVoiceUrl); }
+        recordedVoiceUrl = URL.createObjectURL(blob);
+      
+        // show preview UI (tạo động hoặc cập nhật phần tử đã có)
+        showVoicePreview(recordedVoiceUrl);
+      
+        // reset chunks
+        audioChunks = [];
       };
+      
 
       // Bắt đầu ghi âm
       mediaRecorder.start();
@@ -1876,6 +1970,34 @@ recordBtn.addEventListener('click', async (e) => {
     mediaRecorder.stream.getTracks().forEach(t => t.stop());
   }
 });
+
+// chèn preview nhỏ vào .chat-input (chỉ 1 lần)
+(function addVoicePreviewUI(){
+  const chatInput = document.querySelector('.chat-input');
+  const preview = document.createElement('div');
+  preview.id = 'voice-preview';
+  preview.style.display = 'none';
+  preview.style.alignItems = 'center';
+  preview.style.gap = '8px';
+  preview.innerHTML = `
+    <audio id="voice-preview-audio" controls style="height:30px;"></audio>
+    <button id="delete-voice-btn" class="cancel-record-btn" title="Xoá bản ghi"><i class="fa fa-trash"></i></button>
+  `;
+  chatInput.insertBefore(preview, messageInput); // chèn trước input
+  document.getElementById('delete-voice-btn').addEventListener('click', () => {
+    if (recordedVoiceUrl) { URL.revokeObjectURL(recordedVoiceUrl); recordedVoiceUrl = null; }
+    recordedVoiceFile = null;
+    preview.style.display = 'none';
+  });
+})();
+
+function showVoicePreview(url){
+  const preview = document.getElementById('voice-preview');
+  const audio = document.getElementById('voice-preview-audio');
+  if (!preview || !audio) return;
+  audio.src = url;
+  preview.style.display = 'flex';
+}
 
   // Gọi luôn khi load trang
   loadFriends();
