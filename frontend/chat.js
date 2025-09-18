@@ -391,21 +391,74 @@ document.getElementById('delete-chat-btn').addEventListener('click', () => {
     video.style.maxWidth = '260px';
     msgDiv.appendChild(video);
     } else if (msg.media_type === 'audio') {
+    // ✅ Voice message bubble
+    msgDiv.classList.add('voice-message');
+  
+    const bubble = document.createElement('div');
+    bubble.classList.add('voice-bubble');
+  
+    // Nút play
+    const playBtn = document.createElement('button');
+    playBtn.classList.add('play-btn');
+    playBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
+  
+    // Waveform giả lập
+    const wave = document.createElement('div');
+    wave.classList.add('voice-wave');
+    for (let i = 0; i < 5; i++) {
+      const bar = document.createElement('div');
+      bar.classList.add('wave-bar');
+      wave.appendChild(bar);
+    }
+  
+    // Thời gian
+    const timeSpan = document.createElement('span');
+    timeSpan.classList.add('voice-time');
+    timeSpan.textContent = '0:00';
+  
+    // Audio tag ẩn
     const audio = document.createElement('audio');
     audio.src = msg.media_url;
-    audio.controls = true;
-    audio.style.maxWidth = '260px';
-    audio.style.display = 'block';
-    audio.style.marginTop = '6px';
-    msgDiv.appendChild(audio);
-    } else {
+    audio.preload = 'metadata';
+  
+    // Cập nhật thời lượng khi load xong
+    audio.onloadedmetadata = () => {
+      const dur = Math.floor(audio.duration);
+      const min = Math.floor(dur / 60);
+      const sec = dur % 60;
+      timeSpan.textContent = `${min}:${sec.toString().padStart(2, '0')}`;
+    };
+  
+    // Play / Pause toggle
+    playBtn.onclick = () => {
+      if (audio.paused) {
+        audio.play();
+        playBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
+      } else {
+        audio.pause();
+        playBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
+      }
+    };
+  
+    // Khi audio kết thúc thì reset
+    audio.onended = () => {
+      playBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
+    };
+  
+    bubble.appendChild(playBtn);
+    bubble.appendChild(wave);
+    bubble.appendChild(timeSpan);
+    bubble.appendChild(audio);
+  
+    msgDiv.appendChild(bubble);
+  }else {
     // fallback
     const fileLink = document.createElement('a');
     fileLink.href = msg.media_url;
     fileLink.target = '_blank';
     fileLink.textContent = 'Tệp đính kèm';
     msgDiv.appendChild(fileLink);
-    }
+  }
   }
 
   
@@ -426,6 +479,18 @@ document.getElementById('delete-chat-btn').addEventListener('click', () => {
     // --- Xử lý click xóa / context menu ---
     if (msg.sender_id == me.id) {
       msgDiv.addEventListener('click', async (e) => {
+        // Nếu bấm vào nút (button, icon, audio, img...) thì không xoá
+        if (
+          e.target.closest('button') ||
+          e.target.tagName === 'AUDIO' ||
+          e.target.tagName === 'VIDEO' ||
+          e.target.tagName === 'IMG' ||
+          e.target.closest('.reply-btn') ||
+          e.target.closest('.play-btn')
+        ) {
+          return; // ❌ không chạy xoá
+        }
+    
         e.preventDefault();
         if (confirm('Bạn có chắc muốn xóa tin nhắn này không?')) {
           try {
@@ -438,19 +503,8 @@ document.getElementById('delete-chat-btn').addEventListener('click', () => {
           }
         }
       });
-  
-      msgDiv.addEventListener('contextmenu', async (e) => {
-        e.preventDefault();
-        try {
-          const res = await authFetch(`/api/messages/${msg.id}/seen`, { method: 'PUT' });
-          const data = await res.json();
-          statusEl.textContent = data.seen_at ? '✓ Đã xem' : '✓ Đã gửi';
-        } catch (err) {
-          console.error('Lỗi khi lấy trạng thái tin nhắn', err);
-        }
-        statusEl.style.display = statusEl.style.display === 'none' ? 'block' : 'none';
-      });
     }
+    
   
     // --- Divider theo ngày ---
     let divider = document.querySelector(`.date-divider[data-date="${msgDateStr}"]`);
@@ -1538,92 +1592,190 @@ document.getElementById('cancel-reply').addEventListener('click', () => {
 });
 
 
-// gửi voice 
+// // gửi voice 
+// // ==== Voice message (recording) ====
+// const recordBtn = document.getElementById('recordBtn');
+// const recordTimerEl = document.getElementById('record-timer');
+
+// let mediaRecorder = null;
+// let audioChunks = [];
+// let recordingInterval = null;
+// let recordStartTime = null;
+// let cancelled = false;
+
+
+// function formatTime(sec) {
+//   const m = String(Math.floor(sec/60)).padStart(2,'0');
+//   const s = String(Math.floor(sec%60)).padStart(2,'0');
+//   return `${m}:${s}`;
+// }
+
+// const recordWaveformEl = document.getElementById('record-waveform');
+// const waveCanvas = document.getElementById('wave-canvas');
+// const cancelRecordBtn = document.getElementById('cancel-record-btn');
+// const msgInput = document.getElementById('message-input');
+// let audioCtx, analyser, dataArray, animationId;
+
+// recordBtn.addEventListener('click', async (e) => {
+//   e.preventDefault();
+
+//   if (!mediaRecorder || mediaRecorder.state === 'inactive') {
+//     try {
+//       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+//       mediaRecorder = new MediaRecorder(stream);
+//       audioChunks = [];
+
+//       mediaRecorder.ondataavailable = (ev) => {
+//         if (ev.data.size > 0) audioChunks.push(ev.data);
+//       };
+
+//       mediaRecorder.onstop = async () => {
+//         cancelRecordBtn.onclick = null; // reset hủy
+//         stopWaveform();
+//         msgInput.style.display = 'inline';
+//         recordWaveformEl.style.display = 'none';
+
+//         if (cancelled) {
+//           cancelled = false;
+//           return; // không gửi
+//         }
+
+//         // gửi file như cũ
+//         const blob = new Blob(audioChunks, { type: 'audio/webm' });
+//         const file = new File([blob], `voice_${Date.now()}.webm`, { type: blob.type });
+//         const formData = new FormData();
+//         formData.append('receiver_id', chatWithUserId);
+//         formData.append('file', file);
+//         if (replyToMessage) formData.append('reply_to', replyToMessage.id);
+
+//         try {
+//           const res = await authFetch('/api/messages', { method: 'POST', body: formData });
+//           const message = await res.json();
+//           addMessageToUI(message);
+//         } catch (err) {
+//           console.error('Lỗi gửi voice message:', err);
+//         }
+//       };
+
+//       mediaRecorder.start();
+//       msgInput.style.display = 'none';
+//       recordWaveformEl.style.display = 'flex';
+//       startWaveform(stream);
+
+//       // nút hủy
+//       cancelled = false;
+//       cancelRecordBtn.onclick = () => {
+//         cancelled = true;
+//         mediaRecorder.stop();
+//         mediaRecorder.stream.getTracks().forEach(t => t.stop());
+//       };
+
+//     } catch (err) {
+//       alert('Vui lòng cho phép truy cập micro');
+//     }
+//   } else if (mediaRecorder.state === 'recording') {
+//     mediaRecorder.stop();
+//     mediaRecorder.stream.getTracks().forEach(t => t.stop());
+//   }
+// });
+
+// function startWaveform(stream) {
+//   audioCtx = new AudioContext();
+//   analyser = audioCtx.createAnalyser();
+//   const source = audioCtx.createMediaStreamSource(stream);
+//   source.connect(analyser);
+//   analyser.fftSize = 256;
+//   const bufferLength = analyser.frequencyBinCount;
+//   dataArray = new Uint8Array(bufferLength);
+
+//   const ctx = waveCanvas.getContext('2d');
+//   function draw() {
+//     animationId = requestAnimationFrame(draw);
+//     analyser.getByteFrequencyData(dataArray);
+//     ctx.fillStyle = '#111';
+//     ctx.fillRect(0, 0, waveCanvas.width, waveCanvas.height);
+
+//     const barWidth = (waveCanvas.width / bufferLength) * 2.5;
+//     let x = 0;
+//     for (let i = 0; i < bufferLength; i++) {
+//       const barHeight = dataArray[i] / 2;
+//       ctx.fillStyle = '#4cafef';
+//       ctx.fillRect(x, waveCanvas.height - barHeight, barWidth, barHeight);
+//       x += barWidth + 1;
+//     }
+//   }
+//   draw();
+// }
+
+// function stopWaveform() {
+//   if (animationId) cancelAnimationFrame(animationId);
+//   if (audioCtx) audioCtx.close();
+// }
+// let recordTimerInterval = null;
+
+// function startRecordTimer() {
+//   recordStartTime = Date.now();
+//   const timerEl = document.getElementById('record-timer');
+//   timerEl.textContent = "00:00";
+
+//   recordTimerInterval = setInterval(() => {
+//     const elapsed = Math.floor((Date.now() - recordStartTime) / 1000);
+//     const min = Math.floor(elapsed / 60);
+//     const sec = elapsed % 60;
+//     timerEl.textContent = `${min}:${sec.toString().padStart(2, "0")}`;
+//   }, 1000);
+// }
+
+// function stopRecordTimer() {
+//   clearInterval(recordTimerInterval);
+//   recordTimerInterval = null;
+// }
+
 // ==== Voice message (recording) ====
 const recordBtn = document.getElementById('recordBtn');
-const recordTimerEl = document.getElementById('record-timer');
-
-let mediaRecorder = null;
-let audioChunks = [];
-let recordingInterval = null;
-let recordStartTime = null;
-let cancelled = false;
-
-
-function formatTime(sec) {
-  const m = String(Math.floor(sec/60)).padStart(2,'0');
-  const s = String(Math.floor(sec%60)).padStart(2,'0');
-  return `${m}:${s}`;
-}
-
 const recordWaveformEl = document.getElementById('record-waveform');
 const waveCanvas = document.getElementById('wave-canvas');
 const cancelRecordBtn = document.getElementById('cancel-record-btn');
 const msgInput = document.getElementById('message-input');
+
+let mediaRecorder = null;
+let audioChunks = [];
+let cancelled = false;
+
+// Biến cho waveform
 let audioCtx, analyser, dataArray, animationId;
 
-recordBtn.addEventListener('click', async (e) => {
-  e.preventDefault();
+// Biến cho timer
+let recordStartTime = null;
+let recordTimerInterval = null;
 
-  if (!mediaRecorder || mediaRecorder.state === 'inactive') {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      mediaRecorder = new MediaRecorder(stream);
-      audioChunks = [];
+function startRecordTimer() {
+  recordStartTime = Date.now();
+  const timerEl = document.getElementById('record-timer'); // lấy trực tiếp trong DOM
 
-      mediaRecorder.ondataavailable = (ev) => {
-        if (ev.data.size > 0) audioChunks.push(ev.data);
-      };
+  timerEl.textContent = "00:00";
+  console.log("⏱ Timer started...");
 
-      mediaRecorder.onstop = async () => {
-        cancelRecordBtn.onclick = null; // reset hủy
-        stopWaveform();
-        msgInput.style.display = 'inline';
-        recordWaveformEl.style.display = 'none';
+  recordTimerInterval = setInterval(() => {
+    const elapsed = Math.floor((Date.now() - recordStartTime) / 1000);
+    const min = String(Math.floor(elapsed / 60)).padStart(2, "0");
+    const sec = String(elapsed % 60).padStart(2, "0");
+    timerEl.textContent = `${min}:${sec}`;
+    console.log("⏱ elapsed:", elapsed); // debug
+  }, 1000);
+}
 
-        if (cancelled) {
-          cancelled = false;
-          return; // không gửi
-        }
+function stopRecordTimer() {
+  clearInterval(recordTimerInterval);
+  recordTimerInterval = null;
+  console.log("⏱ Timer stopped.");
+}
 
-        // gửi file như cũ
-        const blob = new Blob(audioChunks, { type: 'audio/webm' });
-        const file = new File([blob], `voice_${Date.now()}.webm`, { type: blob.type });
-        const formData = new FormData();
-        formData.append('receiver_id', chatWithUserId);
-        formData.append('file', file);
-        if (replyToMessage) formData.append('reply_to', replyToMessage.id);
 
-        try {
-          const res = await authFetch('/api/messages', { method: 'POST', body: formData });
-          const message = await res.json();
-          addMessageToUI(message);
-        } catch (err) {
-          console.error('Lỗi gửi voice message:', err);
-        }
-      };
-
-      mediaRecorder.start();
-      msgInput.style.display = 'none';
-      recordWaveformEl.style.display = 'flex';
-      startWaveform(stream);
-
-      // nút hủy
-      cancelled = false;
-      cancelRecordBtn.onclick = () => {
-        cancelled = true;
-        mediaRecorder.stop();
-        mediaRecorder.stream.getTracks().forEach(t => t.stop());
-      };
-
-    } catch (err) {
-      alert('Vui lòng cho phép truy cập micro');
-    }
-  } else if (mediaRecorder.state === 'recording') {
-    mediaRecorder.stop();
-    mediaRecorder.stream.getTracks().forEach(t => t.stop());
-  }
-});
+function stopRecordTimer() {
+  clearInterval(recordTimerInterval);
+  recordTimerInterval = null;
+}
 
 function startWaveform(stream) {
   audioCtx = new AudioContext();
@@ -1658,11 +1810,72 @@ function stopWaveform() {
   if (audioCtx) audioCtx.close();
 }
 
+recordBtn.addEventListener('click', async (e) => {
+  e.preventDefault();
 
+  if (!mediaRecorder || mediaRecorder.state === 'inactive') {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaRecorder = new MediaRecorder(stream);
+      audioChunks = [];
 
+      mediaRecorder.ondataavailable = (ev) => {
+        if (ev.data.size > 0) audioChunks.push(ev.data);
+      };
 
+      mediaRecorder.onstop = async () => {
+        cancelRecordBtn.onclick = null; 
+        stopWaveform();
+        stopRecordTimer();
 
+        msgInput.style.display = 'inline';
+        recordWaveformEl.style.display = 'none';
 
+        if (cancelled) {
+          cancelled = false;
+          return; 
+        }
+
+        const blob = new Blob(audioChunks, { type: 'audio/webm' });
+        const file = new File([blob], `voice_${Date.now()}.webm`, { type: blob.type });
+        const formData = new FormData();
+        formData.append('receiver_id', chatWithUserId);
+        formData.append('file', file);
+        if (replyToMessage) formData.append('reply_to', replyToMessage.id);
+
+        try {
+          const res = await authFetch('/api/messages', { method: 'POST', body: formData });
+          const message = await res.json();
+          addMessageToUI(message);
+        } catch (err) {
+          console.error('Lỗi gửi voice message:', err);
+        }
+      };
+
+      // Bắt đầu ghi âm
+      mediaRecorder.start();
+      msgInput.style.display = 'none';
+      recordWaveformEl.style.display = 'flex';
+      startWaveform(stream);
+      startRecordTimer();
+
+      // Nút hủy
+      cancelled = false;
+      cancelRecordBtn.onclick = () => {
+        cancelled = true;
+        stopRecordTimer();
+        mediaRecorder.stop();
+        mediaRecorder.stream.getTracks().forEach(t => t.stop());
+      };
+
+    } catch (err) {
+      alert('Vui lòng cho phép truy cập micro');
+    }
+  } else if (mediaRecorder.state === 'recording') {
+    mediaRecorder.stop();
+    mediaRecorder.stream.getTracks().forEach(t => t.stop());
+  }
+});
 
   // Gọi luôn khi load trang
   loadFriends();

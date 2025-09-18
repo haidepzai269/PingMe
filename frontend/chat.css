@@ -2141,3 +2141,160 @@
 .chat-input button#recordBtn:hover {
   color: #333;
 }
+
+.voice-message {
+  padding: 0 !important;
+  background: none !important;
+}
+
+.voice-bubble {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #fff;
+  border-radius: 25px;
+  padding: 8px 12px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  max-width: 250px;
+}
+
+.voice-bubble .play-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: linear-gradient(145deg, #a8edea, #fed6e3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #333;
+  font-size: 16px;
+  transition: all 0.25s ease;
+}
+
+.voice-bubble .play-btn:hover {
+  transform: scale(1.1);
+}
+
+.voice-bubble .voice-wave {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  flex: 1;
+  height: 20px;
+}
+
+.voice-bubble .wave-bar {
+  width: 3px;
+  height: 100%;
+  background: #4a90e2;
+  border-radius: 2px;
+  animation: waveAnim 1s ease-in-out infinite;
+}
+
+.voice-bubble .wave-bar:nth-child(2) { animation-delay: 0.2s; }
+.voice-bubble .wave-bar:nth-child(3) { animation-delay: 0.4s; }
+.voice-bubble .wave-bar:nth-child(4) { animation-delay: 0.6s; }
+.voice-bubble .wave-bar:nth-child(5) { animation-delay: 0.8s; }
+
+@keyframes waveAnim {
+  0%, 100% { height: 4px; }
+  50% { height: 20px; }
+}
+
+.voice-bubble .voice-time {
+  font-size: 13px;
+  color: #666;
+  min-width: 35px;
+  text-align: right;
+}
+/* Timer ghi âm */
+.record-timer {
+  font-size: 13px;
+  font-weight: bold;
+  color: #e74c3c; /* đỏ tinh tế */
+  min-width: 40px;
+  text-align: center;
+}
+
+/* Nút hủy ghi âm */
+.cancel-record-btn {
+  border: none;
+  background: #ff6b6b;
+  color: white;
+  padding: 8px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+
+.cancel-record-btn:hover {
+  background: #e63946;
+  transform: scale(1.1);
+}
+
+
+#record-waveform {
+  display: none;
+  flex: 1;
+  align-items: center;
+  gap: 8px;
+}
+
+#record-timer {
+  display: inline-block;
+  font-size: 13px;
+  font-weight: bold;
+  color: #e74c3c; /* đỏ tinh tế */
+  min-width: 40px;
+  text-align: center;
+}
+/* Waveform hiển thị khi ghi âm */
+#record-waveform {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #f9f9f9;
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  padding: 6px 12px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  animation: pulseWave 1.5s infinite;
+}
+
+@keyframes pulseWave {
+  0% { box-shadow: 0 0 0 0 rgba(100, 181, 246, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(100, 181, 246, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(100, 181, 246, 0); }
+}
+
+#record-waveform canvas {
+  border-radius: 6px;
+  background: #eaf6ff;
+}
+
+#record-waveform .record-timer {
+  font-size: 14px;
+  font-weight: bold;
+  color: #444;
+  margin-left: 6px;
+}
+
+/* Nút hủy ghi âm */
+.cancel-record-btn {
+  border: none;
+  background: #eee;
+  color: #555;
+  padding: 6px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.cancel-record-btn:hover {
+  background: #ccc;
+  color: #000;
+}
+
