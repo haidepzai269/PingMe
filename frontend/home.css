@@ -1068,32 +1068,7 @@ box-shadow: 0 0 4px rgba(0,0,0,0.3);
   height: 100%;
   object-fit: cover;
 }
-/* Scrollbar cho .main-section */
-.main-section {
-  overflow-y: auto; /* bật cuộn dọc */
-  scrollbar-width: thin;       /* Firefox */
-  scrollbar-color: #eb1414 #f0f0f0; /* Firefox: màu thumb và track */
-}
 
-/* Chrome, Edge, Safari */
-.main-section::-webkit-scrollbar {
-  width: 10px;
-}
-
-.main-section::-webkit-scrollbar-track {
-  background: #f0f0f0;
-  border-radius: 5px;
-}
-
-.main-section::-webkit-scrollbar-thumb {
-  background: #eb1414;
-  border-radius: 5px;
-  transition: background 0.3s;
-}
-
-.main-section::-webkit-scrollbar-thumb:hover {
-  background: #a00f0f;
-}
 
 /* Optional: thêm shadow khi hover */
 .main-section::-webkit-scrollbar-thumb:active {
@@ -1204,14 +1179,15 @@ box-shadow: 0 0 4px rgba(0,0,0,0.3);
 }
 
 .notification-popup::-webkit-scrollbar-thumb {
-  background-color: #b6dfb8; /* màu thanh cuộn */
+  background: linear-gradient(145deg, #a8edea, #fed6e3);
   border-radius: 8px;
-  border: 2px solid #f1f1f1; /* tạo viền trắng cho thanh */
+  transition: background 0.3s;
 }
 
 .notification-popup::-webkit-scrollbar-thumb:hover {
-  background-color: #388e3c; /* đậm hơn khi hover */
+  background: linear-gradient(145deg, #fed6e3, #a8edea);
 }
+
 .notification-popup.show {
   opacity: 1;
   transform: translateY(0);
@@ -1345,6 +1321,76 @@ box-shadow: 0 0 4px rgba(0,0,0,0.3);
 
 .notif-del-btn:hover {
   color: #e53935;
+}
+
+/* Scrollbar cho .main-section */
+.main-section {
+  overflow-y: auto; /* bật cuộn dọc */
+  scrollbar-width: thin;       /* Firefox */
+  scrollbar-color: #a8edea #f0f0f0; /* Firefox: màu thumb và track */
+}
+
+/* Chrome, Edge, Safari */
+.main-section::-webkit-scrollbar {
+  width: 10px;
+}
+
+.main-section::-webkit-scrollbar-track {
+  background: #f0f0f0;
+  border-radius: 5px;
+}
+
+.main-section::-webkit-scrollbar-thumb {
+  background: linear-gradient(145deg, #a8edea, #fed6e3);
+  border-radius: 5px;
+  transition: background 0.3s;
+}
+
+.main-section::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(145deg, #fed6e3, #a8edea);
+}
+
+/* Optional: thêm shadow khi click giữ chuột */
+.main-section::-webkit-scrollbar-thumb:active {
+  box-shadow: inset 0 0 2px rgba(0,0,0,0.5);
+}
+
+/* ========== Force gradient scrollbar for main-section and any scrollable inside it ========== */
+/* Firefox */
+.main-section,
+.main-section * {
+  scrollbar-width: thin;
+  scrollbar-color: #a8edea #f0f0f0;
+}
+
+/* Webkit browsers (Chrome / Edge / Safari) */
+.main-section::-webkit-scrollbar,
+.main-section *::-webkit-scrollbar {
+  width: 10px;
+}
+
+.main-section::-webkit-scrollbar-track,
+.main-section *::-webkit-scrollbar-track {
+  background: #f0f0f0;
+  border-radius: 6px;
+}
+
+.main-section::-webkit-scrollbar-thumb,
+.main-section *::-webkit-scrollbar-thumb {
+  background: linear-gradient(145deg, #a8edea, #fed6e3) !important;
+  border-radius: 6px;
+  transition: background 0.25s ease;
+}
+
+.main-section::-webkit-scrollbar-thumb:hover,
+.main-section *::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(145deg, #fed6e3, #a8edea) !important;
+}
+
+/* keep active state shadow */
+.main-section::-webkit-scrollbar-thumb:active,
+.main-section *::-webkit-scrollbar-thumb:active {
+  box-shadow: inset 0 0 2px rgba(0,0,0,0.35);
 }
 
 

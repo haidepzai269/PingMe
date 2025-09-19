@@ -2453,6 +2453,47 @@
   word-break: break-word;       /* xuống dòng khi dài */
 }
 .message.mine.voice-message.has-text p {
+  font-size: 16px;
   text-align: right;
   padding-right: 7px; /* thêm đệm nhỏ bên phải */
 }
+
+/* ---------- Mirror style for incoming voice messages ---------- */
+/* Áp style giống .mine chỉ cho voice hoặc voice+text (không ảnh hưởng text-only) */
+
+/* Nếu là voice-only (incoming) -> dùng cùng màu bong bóng như của mình */
+.message.other.voice-message .voice-bubble {
+  /* same visual as .message.mine .voice-bubble */
+  background: linear-gradient(90deg, #a8edea, #fed6e3);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  color: #222; /* đảm bảo icon/text hiển thị tốt */
+}
+
+/* Nếu là voice + text (incoming) -> toàn bộ khung nhận sẽ có nền giống khung của mình */
+.message.other.voice-message.has-text {
+  background: linear-gradient(135deg, #a8edea, #fed6e3) !important;
+  border: none !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  color: #222;
+}
+
+/* Căn lại text trong khung voice+text để trông giống tin gửi */
+.message.other.voice-message.has-text p {
+  font-size: 16px;
+  text-align: right;      /* chữ sẽ nhìn giống tin gửi */
+  color: #222;
+  padding-left: 6px;
+}
+
+/* Đảm bảo nút play / time vẫn hiển thị ổn trên nền gradient */
+.message.other.voice-message .play-btn,
+.message.other.voice-message .voice-time {
+  color: #222;
+  opacity: 1;
+}
+
+/* Nếu muốn, giữ reply-btn icon không bị lật (giữ hành vi hiện tại) -
+   hoặc lật nó giống mine nếu bạn muốn trải nghiệm hoàn toàn giống sender:
+   (bỏ comment để lật) */
+/* .message.other.voice-message .reply-btn i { transform: scaleX(-1); } */
+
