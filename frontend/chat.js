@@ -391,18 +391,24 @@ document.getElementById('delete-chat-btn').addEventListener('click', () => {
     video.style.maxWidth = '260px';
     msgDiv.appendChild(video);
     } else if (msg.media_type === 'audio') {
-    // ✅ Voice message bubble
+    // Voice message bubble
     msgDiv.classList.add('voice-message');
+  
+    // 👇 Thêm class has-text nếu có text kèm voice
+    if (msg.content && msg.content.trim() !== '') {
+      msgDiv.classList.add('has-text');
+    }
   
     const bubble = document.createElement('div');
     bubble.classList.add('voice-bubble');
   
-    // Nút play
+    // Play button
     const playBtn = document.createElement('button');
     playBtn.classList.add('play-btn');
+    playBtn.setAttribute('type', 'button');
     playBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
   
-    // Waveform giả lập
+    // Waveform bars (visual only)
     const wave = document.createElement('div');
     wave.classList.add('voice-wave');
     for (let i = 0; i < 5; i++) {
@@ -411,26 +417,32 @@ document.getElementById('delete-chat-btn').addEventListener('click', () => {
       wave.appendChild(bar);
     }
   
-    // Thời gian
+    // Duration text
     const timeSpan = document.createElement('span');
     timeSpan.classList.add('voice-time');
     timeSpan.textContent = '0:00';
   
-    // Audio tag ẩn
+    // Hidden audio element
     const audio = document.createElement('audio');
     audio.src = msg.media_url;
     audio.preload = 'metadata';
   
-    // Cập nhật thời lượng khi load xong
     audio.onloadedmetadata = () => {
-      const dur = Math.floor(audio.duration);
+      const dur = Math.floor(audio.duration) || 0;
       const min = Math.floor(dur / 60);
       const sec = dur % 60;
-      timeSpan.textContent = `${min}:${sec.toString().padStart(2, '0')}`;
+      timeSpan.textContent = `${min}:${String(sec).padStart(2, '0')}`;
     };
   
-    // Play / Pause toggle
-    playBtn.onclick = () => {
+    playBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      document.querySelectorAll('.voice-bubble audio').forEach(a => {
+        if (a !== audio) {
+          a.pause();
+          const otherBtn = a.closest('.voice-bubble')?.querySelector('.play-btn');
+          if (otherBtn) otherBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
+        }
+      });
       if (audio.paused) {
         audio.play();
         playBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
@@ -438,12 +450,13 @@ document.getElementById('delete-chat-btn').addEventListener('click', () => {
         audio.pause();
         playBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
       }
-    };
+    });
   
-    // Khi audio kết thúc thì reset
-    audio.onended = () => {
-      playBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
-    };
+    audio.addEventListener('click', e => e.stopPropagation());
+    wave.addEventListener('click', e => e.stopPropagation());
+    audio.addEventListener('play', () => playBtn.innerHTML = '<i class="fa-solid fa-pause"></i>');
+    audio.addEventListener('pause', () => playBtn.innerHTML = '<i class="fa-solid fa-play"></i>');
+    audio.addEventListener('ended', () => playBtn.innerHTML = '<i class="fa-solid fa-play"></i>');
   
     bubble.appendChild(playBtn);
     bubble.appendChild(wave);
@@ -451,14 +464,14 @@ document.getElementById('delete-chat-btn').addEventListener('click', () => {
     bubble.appendChild(audio);
   
     msgDiv.appendChild(bubble);
-  }else {
+    } else {
     // fallback
     const fileLink = document.createElement('a');
     fileLink.href = msg.media_url;
     fileLink.target = '_blank';
     fileLink.textContent = 'Tệp đính kèm';
     msgDiv.appendChild(fileLink);
-  }
+    }
   }
 
   
@@ -466,7 +479,7 @@ document.getElementById('delete-chat-btn').addEventListener('click', () => {
     const replyBtn = document.createElement('button');
     replyBtn.classList.add('reply-btn');
     replyBtn.innerHTML = '<i class="fa fa-reply"></i>';
-    replyBtn.onclick = () => showReplyPreview(msg);
+    replyBtn.onclick = (e) => { e.stopPropagation(); showReplyPreview(msg); };
     msgDiv.appendChild(replyBtn);
   
     // --- Trạng thái tin nhắn ---
