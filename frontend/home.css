@@ -1394,6 +1394,140 @@ box-shadow: 0 0 4px rgba(0,0,0,0.3);
 }
 
 
+/* Tùy chỉnh menu dropdown cho danh sách bạn bè */
+#friends-popup.dropdown-menu {
+  left: 50% !important;          /* canh giữa theo chiều ngang */
+  transform: translateX(-50%);   /* dịch ngược 50% để đúng tâm */
+  min-width: 240px;              /* chiều rộng tối thiểu */
+  max-width: 280px;
+  margin-top: 10px;
+  padding: 12px;
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  transition: all 0.25s ease;
+  opacity: 0;
+}
+
+/* Khi dropdown mở (Bootstrap thêm class .show) */
+#friends-popup.show {
+  opacity: 1;
+  transform: translate(-50%, 4px);   /* trượt nhẹ xuống */
+}
+
+/* Item trong danh sách bạn bè */
+#friends-popup .user-item,
+#friends-list .d-flex {
+  padding: 6px 10px;
+  border-radius: 8px;
+  transition: background 0.2s ease;
+}
+
+#friends-popup .user-item:hover,
+#friends-list .d-flex:hover {
+  background: #f6f9ff;
+  cursor: pointer;
+}
+
+/* Avatar trong danh sách */
+#friends-popup img {
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  object-fit: cover;
+  box-shadow: 0 0 0 2px #f0f0f0;
+}
+/* Popup bạn bè – canh giữa dưới nút */
+#friends-popup.dropdown-menu {
+  position: absolute;
+  top: 100%;                 /* ngay dưới nút */
+  left: 50% !important;      /* giữa */
+  transform: translateX(-50%) translateY(5px);
+  min-width: 240px;
+  max-width: 280px;
+  padding: 12px;
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+  opacity: 0;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+/* Khi mở dropdown */
+#friends-popup.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* Style item bên trong */
+#friends-popup .d-flex {
+  padding: 6px 10px;
+  border-radius: 8px;
+  transition: background 0.2s ease;
+}
+#friends-popup .d-flex:hover {
+  background: #f6f9ff;
+  cursor: pointer;
+}
+
+/* Avatar */
+#friends-popup img {
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  object-fit: cover;
+  box-shadow: 0 0 0 2px #f0f0f0;
+}
+
+#friends-popup::-webkit-scrollbar {
+  width: 8px;
+}
+
+#friends-popup::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+#friends-popup::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #cfd9ff, #93b5ff);
+  border-radius: 4px;
+}
+
+#friends-popup::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #b0c4ff, #739aff);
+}
+
+/* Firefox */
+#friends-popup {
+  scrollbar-width: thin;
+  scrollbar-color: #93b5ff transparent;
+}
+
+/* Hiệu ứng mượt cho friends-popup */
+#friends-popup {
+  opacity: 0;
+  transform: translateX(-50%) translateY(-10px); /* giữ căn giữa ngang */
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+#friends-popup.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0); /* vẫn giữ translateX(-50%) */
+}
+
+
+.profile-info {
+  max-height: 500px; /* đủ lớn để chứa nội dung */
+  opacity: 1;
+  overflow: hidden;
+  transition: max-height 0.4s ease, opacity 0.4s ease;
+}
+
+.profile-info.hide {
+  max-height: 0;
+  opacity: 0;
+}
+
+
 /* MOBILE < 768px: sidebar giữ nguyên; profile 1/3 trên, main 2/3 dưới */
 @media (max-width: 900px) {
   html, body { height: 100%; }

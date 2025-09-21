@@ -60,13 +60,14 @@ function setupUIListeners() {
     const img = document.querySelector('#profile-avatar img');
     if (img) {
       document.getElementById('modal-avatar-img').src = img.src;
-      document.getElementById('avatar-modal').classList.remove('hidden');
+      document.getElementById('avatar-modal').classList.add('show');
     }
   });
-
+  
   document.getElementById('close-avatar-modal').addEventListener('click', () => {
-    document.getElementById('avatar-modal').classList.add('hidden');
+    document.getElementById('avatar-modal').classList.remove('show');
   });
+  
 
   // Delegate clicks inside user list
   document.getElementById('user-list').addEventListener('click', async (e) => {
@@ -585,6 +586,33 @@ document.getElementById('logout-btn').addEventListener('click', () => {
 });
 
 
+
+
+
+const btn = document.getElementById("profile-friends-count");
+const friendsListEl = document.getElementById("friends-list");
+const profileInfo = document.querySelector(".profile-info");
+
+btn.addEventListener("show.bs.dropdown", async () => {
+  profileInfo.classList.add("hide");  // ẩn mượt
+  const res = await authFetch("/api/friends");
+  if (!res.ok) return;
+  const friends = await res.json();
+  friendsListEl.innerHTML = friends.map(f => `
+    <div class="d-flex align-items-center gap-2 py-1">
+      <img src="${f.avatar || 'default-avatar.png'}"
+           class="rounded-circle" style="width:35px;height:35px">
+      <span>${f.username}</span>
+    </div>`).join("");
+});
+
+btn.addEventListener("hide.bs.dropdown", () => {
+  profileInfo.classList.remove("hide");  // hiện mượt
+});
+
+
+
+
 async function loadUserSuggestions() {
     const res = await authFetch('/api/users');
     if (!res.ok) return console.error('Không tải được danh sách users');
@@ -706,8 +734,13 @@ async function declineRequest(requestId) {
 }
 
 // Modal
-function openModal() { document.getElementById('edit-modal').classList.remove('hidden'); }
-window.closeModal = function () { document.getElementById('edit-modal').classList.add('hidden'); };
+function openModal() {
+  document.getElementById('edit-modal').classList.add('show');
+}
+window.closeModal = function () {
+  document.getElementById('edit-modal').classList.remove('show');
+};
+
 
 window.submitEdit = async function () {
   const username = document.getElementById('edit-username').value;
