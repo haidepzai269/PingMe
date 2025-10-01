@@ -1499,7 +1499,7 @@ box-shadow: 0 0 4px rgba(0,0,0,0.3);
 /* Firefox */
 #friends-popup {
   scrollbar-width: thin;
-  scrollbar-color:rgb(133, 169, 249) transparent;
+  scrollbar-color:rgb(132, 169, 250) transparent;
 }
 
 /* Hiệu ứng mượt cho friends-popup */
