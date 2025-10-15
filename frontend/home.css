@@ -1425,7 +1425,7 @@ box-shadow: 0 0 4px rgba(0,0,0,0.3);
 
 #friends-popup .user-item:hover,
 #friends-list .d-flex:hover {
-  background:rgb(245, 245, 245);
+  background:rgb(255, 255, 255);
   cursor: pointer;
 }
 
